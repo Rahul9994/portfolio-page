@@ -96,6 +96,9 @@ window.PORTFOLIO = {
 
   /* ---------- All GitHub repositories (snapshot) ---------- */
   repos: [
+    { name: "portfolio-page", title: "This Portfolio", cat: "web", lang: "JavaScript", updated: "2026-10-03",
+      desc: "The site you're on: a cinematic portfolio with a boot intro, live aurora background, orbiting skill ring and a self-updating GitHub grid.",
+      tags: ["HTML", "CSS", "Canvas"], live: "https://rahul9994.github.io/portfolio-page/" },
     { name: "Vibing-projects", title: "JARVIS · Vibing Projects", cat: "ai", lang: "Python", updated: "2026-10-02",
       desc: "A talking 3D second brain: a galaxy of your notes that answers out loud as a witty British butler and grows new stars as you teach it.",
       tags: ["LLMs", "Voice", "3D"], live: "https://rahul9994.github.io/Vibing-projects/jarvis/" },
