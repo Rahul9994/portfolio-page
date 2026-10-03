@@ -9,7 +9,7 @@ window.PORTFOLIO = {
 
   links: {
     github: "https://github.com/Rahul9994",
-    linkedin: "https://www.linkedin.com/in/rahulpenugonda-86638137",
+    linkedin: "https://www.linkedin.com/in/rahul-penugonda-86638137a/",
     email: "rockz0551@gmail.com",
     promptnexus: "https://pr0mptnexus.liveblog365.com",
   },
