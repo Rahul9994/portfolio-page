@@ -947,6 +947,7 @@
     NVIDIA: "#76b900", Anthropic: "#d97757", "DeepLearning.AI": "#ff5a5f", "IBM SkillsBuild": "#0f62fe",
     Microsoft: "#00a4ef", Kaggle: "#20beff", Be10x: "#a855f7", Udemy: "#a435f0", Coursera: "#2a73cc",
     "Coursera Project Network": "#2a73cc", GeeksforGeeks: "#2f8d46",
+    "AWS Academy": "#ff9900", "AWS Training & Certification": "#ff9900",
   };
   let certFilter = "all";
   const certsOrdered = () => [...D.certs.filter((c) => c.featured), ...D.certs.filter((c) => !c.featured)];
@@ -962,7 +963,7 @@
     $("#badgeRow").addEventListener("click", (e) => {
       const b = e.target.closest("[data-badge]");
       if (!b) return;
-      const list = D.badges.map((x) => ({ src: `assets/img/badges/${x.file}.webp`, title: x.title, sub: x.sub }));
+      const list = D.badges.map((x) => ({ src: `assets/img/badges/${x.file}.webp`, title: x.title, sub: x.sub, verify: x.verify }));
       Lightbox.open(list, +b.dataset.badge, b);
     });
   }
@@ -1010,7 +1011,7 @@
       const b = e.target.closest("[data-cert]");
       if (!b) return;
       const list = certsOrdered().filter((c) => certFilter === "all" || c.cat === certFilter)
-        .map((c) => ({ src: certImg(c).full, title: c.title, sub: [c.issuer, c.date].filter(Boolean).join(" · ") }));
+        .map((c) => ({ src: certImg(c).full, title: c.title, sub: [c.issuer, c.date].filter(Boolean).join(" · "), verify: c.verify }));
       Lightbox.open(list, +b.dataset.cert, b);
     });
   }
@@ -1023,6 +1024,7 @@
     const img = $("img", lb);
     const title = $("figcaption b", lb);
     const sub = $("figcaption span", lb);
+    const verifyLink = $(".lb-verify", lb);
     let items = [], idx = 0, opener = null;
 
     function show(i) {
@@ -1034,6 +1036,8 @@
       pre.src = it.src;
       title.textContent = it.title;
       sub.textContent = `${it.sub}  ·  ${idx + 1} / ${items.length}`;
+      verifyLink.hidden = !it.verify;
+      if (it.verify) verifyLink.href = it.verify;
       $$(".lb-nav", lb).forEach((b) => (b.hidden = items.length < 2));
     }
     function open(list, i, from) {
@@ -1061,7 +1065,7 @@
       else if (e.key === "ArrowLeft") show(idx - 1);
       else if (e.key === "ArrowRight") show(idx + 1);
       else if (e.key === "Tab") {
-        const f = $$("button:not([hidden])", lb);
+        const f = $$("button:not([hidden]), a:not([hidden])", lb);
         const first = f[0], last = f[f.length - 1];
         if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
@@ -1164,6 +1168,7 @@
   renderSkills();
   initRepos();
   initCerts();
+  $("#certStat").dataset.count = D.certs.length;
   hydrateIcons($("#featured"));
   Background.init();
   initSmoothScroll();

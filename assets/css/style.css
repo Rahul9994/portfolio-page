@@ -1273,7 +1273,9 @@ body.is-ready .scroll-cue { opacity: 1; }
 .issuer-strip span { font-family: var(--font-display); font-weight: 600; font-size: 15px; color: var(--dim); transition: color 0.3s; }
 .issuer-strip span:hover { color: var(--text); }
 
-.badge-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 64px; }
+/* flex so any number of badges stays centred (5 across on desktop) */
+.badge-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; margin-bottom: 64px; }
+.badge-row > .badge { flex: 0 1 calc((100% - 4 * 18px) / 5); min-width: 0; }
 .badge {
   position: relative;
   display: flex; flex-direction: column; align-items: center; text-align: center;
@@ -1365,6 +1367,15 @@ body.is-ready .scroll-cue { opacity: 1; }
 .lb-figure figcaption { text-align: center; color: #e6e8ff; }
 .lb-figure figcaption b { display: block; font-family: var(--font-display); font-size: 18px; }
 .lb-figure figcaption span { font-size: 13px; color: #a7aed3; }
+.lb-verify {
+  display: inline-flex; margin-top: 10px; padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 600; color: #fff;
+  background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: background-color 0.3s;
+}
+.lb-verify[hidden] { display: none; }
+.lb-verify:hover { background: rgba(255, 255, 255, 0.2); }
+.lb-figure figcaption { display: flex; flex-direction: column; align-items: center; }
 .lb-close, .lb-nav {
   position: absolute; width: 50px; height: 50px; border-radius: 50%;
   display: grid; place-items: center;
@@ -1462,7 +1473,7 @@ body.is-ready .scroll-cue { opacity: 1; }
   .about-grid, .journey-grid { grid-template-columns: 1fr; }
   .feat, .feat:nth-child(even) { grid-template-columns: 1fr; }
   .feat:nth-child(even) .feat-media { order: 0; }
-  .badge-row { grid-template-columns: repeat(2, 1fr); }
+  .badge-row > .badge { flex-basis: calc((100% - 2 * 18px) / 3); }
   .contact-links { grid-template-columns: 1fr; }
 }
 
@@ -1523,6 +1534,7 @@ body.is-ready .scroll-cue { opacity: 1; }
   .cert-title { font-size: 14px; }
   .cert-thumb::after { display: none; }
   .badge-row { gap: 12px; }
+  .badge-row > .badge { flex-basis: calc((100% - 12px) / 2); }
   .badge { padding: 18px 10px 16px; }
   .badge b { font-size: 13.5px; }
   .issuer-strip { gap: 8px 18px; padding: 18px; margin-bottom: 44px; }

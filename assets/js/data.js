@@ -207,9 +207,13 @@ window.PORTFOLIO = {
   ],
 
   /* ---------- Certificates ---------- */
-  certCats: { ai: "AI & ML", security: "Cybersecurity", more: "Cloud, Web & Community" },
+  certCats: { ai: "AI & ML", cloud: "Cloud", security: "Cybersecurity", more: "Web & Community" },
 
   certs: [
+    { file: "aws_02", title: "AWS Academy Graduate — Cloud Foundations", issuer: "AWS Academy", date: "Sep 2026 · 20 hrs", cat: "cloud", featured: true,
+      verify: "https://www.credly.com/go/pXuXHbUJ" },
+    { file: "aws_01", title: "AWS Cloud Practitioner Essentials", issuer: "AWS Training & Certification", date: "Sep 2026", cat: "cloud" },
+    { file: "aws_03", title: "Official Practice Exam: AWS Certified Cloud Practitioner (CLF-C02)", issuer: "AWS Training & Certification", date: "Sep 2026", cat: "cloud" },
     { file: "palo_alto_cybersecurity_01", title: "Cybersecurity Fundamentals", issuer: "Palo Alto Networks", date: "May 2026", cat: "security" },
     { file: "palo_alto_cybersecurity_02", title: "Network Security Fundamentals", issuer: "Palo Alto Networks", date: "May 2026", cat: "security" },
     { file: "palo_alto_cybersecurity_03", title: "Cloud Security Fundamentals", issuer: "Palo Alto Networks", date: "May 2026", cat: "security" },
@@ -220,7 +224,8 @@ window.PORTFOLIO = {
     { file: "nvidia_01", title: "Introduction to Transformer-Based NLP", issuer: "NVIDIA", date: "Sep 2025", cat: "ai", featured: true },
     { file: "anthropic_01", title: "Claude Code 101", issuer: "Anthropic", date: "2026", cat: "ai" },
     { file: "google_01", title: "Pitch Night Edition — Student Ambassador", issuer: "Google", date: "May 2026", cat: "more", featured: true },
-    { file: "coursera_03", title: "AI For Everyone — Andrew Ng", issuer: "DeepLearning.AI", date: "Aug 2025", cat: "ai" },
+    { file: "coursera_03", title: "AI For Everyone — Andrew Ng", issuer: "DeepLearning.AI", date: "Aug 2025", cat: "ai",
+      verify: "https://coursera.org/verify/EM27HWL9S22G" },
     { file: "ibm_04", title: "Getting Started with Artificial Intelligence", issuer: "IBM SkillsBuild", date: "May 2026", cat: "ai" },
     { file: "ibm_01", title: "Introduction to Artificial Intelligence", issuer: "IBM SkillsBuild", date: "May 2026", cat: "ai" },
     { file: "ibm_02", title: "Mastering the Art of Prompting", issuer: "IBM SkillsBuild", date: "May 2026", cat: "ai" },
@@ -230,7 +235,7 @@ window.PORTFOLIO = {
     { file: "kaggle_01", title: "Intro to Machine Learning", issuer: "Kaggle", date: "Sep 2025", cat: "ai" },
     { file: "be10x_01", title: "AI Tools & ChatGPT Workshop", issuer: "Be10x", date: "Jan 2026", cat: "ai" },
     { file: "udemy_01", title: "Learn Ethical Hacking From Scratch", issuer: "Udemy", date: "Sep 2025", cat: "security" },
-    { file: "coursera_02", title: "Getting Started with Azure IoT Hub", issuer: "Coursera", date: "May 2026", cat: "more" },
+    { file: "coursera_02", title: "Getting Started with Azure IoT Hub", issuer: "Coursera", date: "May 2026", cat: "cloud" },
     { file: "coursera_01", title: "Build a Free Website with WordPress", issuer: "Coursera Project Network", date: "Sep 2025", cat: "more" },
     { file: "geeksforgeeks_01", title: "Computer Fundamentals Skill-Up", issuer: "GeeksforGeeks", date: "", cat: "more" },
   ],
@@ -284,6 +289,7 @@ window.PORTFOLIO = {
   ],
 
   badges: [
+    { file: "badge_05", title: "AWS Cloud Foundations", sub: "AWS Academy · Trained", verify: "https://www.credly.com/go/pXuXHbUJ" },
     { file: "badge_01", title: "Gemini Certified", sub: "University Student · Google" },
     { file: "badge_02", title: "OCI AI Foundations", sub: "Oracle Certified Associate" },
     { file: "badge_03", title: "50 Days Badge 2026", sub: "LeetCode" },
