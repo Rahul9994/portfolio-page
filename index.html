@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Rahul Penugonda — AI Engineer & Builder</title>
+  <meta name="description" content="Rahul Penugonda — B.Tech Artificial Intelligence student at Amrita Vishwa Vidyapeetham building intelligent, secure and scalable systems across AI/ML, computer vision, cybersecurity and embedded hardware." />
+  <meta name="author" content="Rahul Penugonda" />
+  <meta name="theme-color" content="#05060f" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Rahul Penugonda — AI Engineer & Builder" />
+  <meta property="og:description" content="AI · Computer Vision · Cybersecurity · Embedded Systems. Projects, certifications and more." />
+  <meta property="og:image" content="https://rahul9994.github.io/portfolio-page/assets/img/og.jpg" />
+  <meta property="og:url" content="https://rahul9994.github.io/portfolio-page/" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2322d3ee'/%3E%3Cstop offset='.5' stop-color='%238b5cf6'/%3E%3Cstop offset='1' stop-color='%23f472b6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='%2305060f'/%3E%3Ctext x='50%25' y='56%25' text-anchor='middle' dominant-baseline='middle' font-family='Arial Black,Arial' font-weight='900' font-size='28' fill='url(%23g)'%3ERP%3C/text%3E%3C/svg%3E" />
+
+  <!-- Apply saved / system theme before paint to avoid a flash -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("rp-theme");
+        if (!t) t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="preload" as="image" href="assets/img/profile.webp" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+
+<body class="is-booting">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- ===================== BOOT SCREEN ===================== -->
+  <div id="boot" role="status" aria-live="polite" aria-label="Loading portfolio">
+    <div class="boot-scan"></div>
+    <div class="boot-core">
+      <div class="boot-emblem">
+        <svg class="boot-ring" viewBox="0 0 200 200" aria-hidden="true">
+          <defs>
+            <linearGradient id="bootGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#22d3ee" />
+              <stop offset=".5" stop-color="#8b5cf6" />
+              <stop offset="1" stop-color="#f472b6" />
+            </linearGradient>
+          </defs>
+          <circle class="ring-track" cx="100" cy="100" r="90" />
+          <circle class="ring-progress" cx="100" cy="100" r="90" />
+          <circle class="ring-ticks" cx="100" cy="100" r="78" />
+        </svg>
+        <svg class="boot-mono" viewBox="0 0 120 80" aria-hidden="true">
+          <path d="M14 66V14h20c12 0 19 6 19 16s-7 16-19 16H14m20 0 20 20" />
+          <path d="M68 66V14h20c12 0 19 6 19 16s-7 16-19 16H68" />
+        </svg>
+      </div>
+      <div class="boot-name" data-scramble="RAHUL PENUGONDA">RAHUL PENUGONDA</div>
+      <div class="boot-log" aria-hidden="true"></div>
+      <div class="boot-bar"><span></span></div>
+      <div class="boot-meta"><span class="boot-pct">000</span><span>%</span><span class="boot-sep">//</span><span class="boot-status">INITIALIZING</span></div>
+    </div>
+    <button class="boot-skip" type="button">Skip intro <kbd>Esc</kbd></button>
+    <div class="boot-curtain top"></div>
+    <div class="boot-curtain bottom"></div>
+  </div>
+
+  <!-- ===================== BACKGROUND ===================== -->
+  <div class="bg" aria-hidden="true">
+    <canvas id="aurora"></canvas>
+    <canvas id="stars"></canvas>
+    <div class="bg-grid"></div>
+    <div class="bg-noise"></div>
+    <div class="bg-vignette"></div>
+  </div>
+
+
+  <div class="cursor-ring" aria-hidden="true"></div>
+  <div class="scroll-progress" aria-hidden="true"><span></span></div>
+
+  <!-- ===================== NAV ===================== -->
+  <header class="nav" id="nav">
+    <a href="#home" class="nav-logo" aria-label="Back to top">
+      <span class="logo-mark">RP</span>
+      <span class="logo-text">Rahul<b>.</b></span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#about">About</a>
+      <a href="#journey">Journey</a>
+      <a href="#projects">Projects</a>
+      <a href="#repos">Repos</a>
+      <a href="#skills">Skills</a>
+      <a href="#certificates">Certificates</a>
+      <a href="#contact">Contact</a>
+      <span class="nav-indicator" aria-hidden="true"></span>
+    </nav>
+    <div class="nav-actions">
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark theme">
+        <svg class="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8 6 18M18 6l1.8-1.8"/></svg>
+        <svg class="i-moon" viewBox="0 0 24 24"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
+      </button>
+      <a class="btn btn-sm btn-glow nav-cta" href="#contact">Let's talk</a>
+      <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">
+        <span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+    <nav aria-label="Mobile">
+      <a href="#about"><i>01</i>About</a>
+      <a href="#journey"><i>02</i>Journey</a>
+      <a href="#projects"><i>03</i>Projects</a>
+      <a href="#repos"><i>04</i>Repos</a>
+      <a href="#skills"><i>05</i>Skills</a>
+      <a href="#certificates"><i>06</i>Certificates</a>
+      <a href="#contact"><i>07</i>Contact</a>
+    </nav>
+    <div class="mobile-social" data-social></div>
+  </div>
+
+  <!-- Desktop social rail -->
+  <aside class="social-rail" aria-label="Social links">
+    <div data-social></div>
+    <span class="rail-line"></span>
+  </aside>
+  <aside class="email-rail" aria-hidden="true">
+    <a href="mailto:rockz0551@gmail.com" tabindex="-1">rockz0551@gmail.com</a>
+    <span class="rail-line"></span>
+  </aside>
+
+  <main id="main">
+    <!-- ===================== HERO ===================== -->
+    <section class="hero" id="home">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="hero-eyebrow" data-hero="1">
+            <span class="pulse-dot"></span>
+            B.Tech Artificial Intelligence · Amrita Vishwa Vidyapeetham
+          </p>
+          <h1 class="hero-title" aria-label="Rahul Penugonda">
+            <span class="line"><span class="word" data-hero="2">Rahul</span></span>
+            <span class="line"><span class="word grad-text" data-hero="3">Penugonda</span></span>
+          </h1>
+          <p class="hero-role" data-hero="4">
+            I build <span class="rotator" id="rotator" aria-live="polite"></span><span class="caret" aria-hidden="true"></span>
+          </p>
+          <p class="hero-lede" data-hero="5">
+            An AI student on a mission to build <strong>intelligent, secure and scalable systems</strong> —
+            from CNNs flying on drones and ESP32 security rigs to LLM-powered web apps used in production.
+          </p>
+          <div class="hero-ctas" data-hero="6">
+            <a href="#projects" class="btn btn-glow magnetic">
+              <span>Explore my work</span>
+              <svg viewBox="0 0 24 24" class="ic"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+            <a href="#contact" class="btn btn-ghost magnetic"><span>Get in touch</span></a>
+            <div class="hero-icons">
+              <a class="icon-btn magnetic" href="https://github.com/Rahul9994" target="_blank" rel="noopener" aria-label="GitHub" data-icon="github"></a>
+              <a class="icon-btn magnetic" href="https://www.linkedin.com/in/rahulpenugonda-86638137" target="_blank" rel="noopener" aria-label="LinkedIn" data-icon="linkedin"></a>
+            </div>
+          </div>
+          <dl class="hero-stats" data-hero="7">
+            <div><dt><span data-count="8.74" data-decimals="2">0</span></dt><dd>CGPA</dd></div>
+            <div><dt><span data-count="35" id="repoCount">0</span></dt><dd>Public repos</dd></div>
+            <div><dt><span data-count="23">0</span>+</dt><dd>Certifications</dd></div>
+            <div><dt><span data-count="450">0</span>+</dt><dd>DSA problems</dd></div>
+          </dl>
+        </div>
+
+        <div class="hero-visual" data-hero="3">
+          <div class="portrait" id="portrait">
+            <div class="portrait-glow"></div>
+            <div class="orbit orbit-1"><span></span></div>
+            <!-- Saturn-style ring: back half sits behind the photo, front half in front -->
+            <svg class="ring ring-back" viewBox="0 0 100 100" aria-hidden="true">
+              <defs><linearGradient id="ringGradB" x1="0" y1="0" x2="1" y2="0"><stop offset="0" style="stop-color:var(--c1)"/><stop offset=".5" style="stop-color:var(--c2)"/><stop offset="1" style="stop-color:var(--c3)"/></linearGradient></defs>
+              <g class="ring-tilt"><path class="ring-glow" /><path class="ring-line" stroke="url(#ringGradB)" /></g>
+            </svg>
+            <div class="portrait-frame">
+              <img src="assets/img/profile.webp" alt="Rahul Penugonda" width="800" height="800" fetchpriority="high" />
+              <div class="portrait-scan"></div>
+            </div>
+            <svg class="ring ring-front" viewBox="0 0 100 100" aria-hidden="true">
+              <defs><linearGradient id="ringGradF" x1="1" y1="0" x2="0" y2="0"><stop offset="0" style="stop-color:var(--c3)"/><stop offset=".5" style="stop-color:var(--c2)"/><stop offset="1" style="stop-color:var(--c1)"/></linearGradient></defs>
+              <g class="ring-tilt"><path class="ring-glow" /><path class="ring-line" stroke="url(#ringGradF)" /></g>
+            </svg>
+            <div class="orbiter" data-orbiter="0" aria-hidden="true"></div>
+            <div class="orbiter" data-orbiter="1" aria-hidden="true"></div>
+            <span class="satellite" aria-hidden="true"></span>
+            <span class="satellite s2" aria-hidden="true"></span>
+            <span class="satellite s3" aria-hidden="true"></span>
+          </div>
+        </div>
+      </div>
+      <a href="#about" class="scroll-cue" aria-label="Scroll to About">
+        <span class="mouse"><span></span></span>
+        <small>Scroll</small>
+      </a>
+    </section>
+
+    <!-- Marquee -->
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track" id="marqueeA"></div>
+      <div class="marquee-track reverse" id="marqueeB"></div>
+    </div>
+
+    <!-- ===================== ABOUT ===================== -->
+    <section class="section" id="about">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow" data-reveal><span>01</span> About me</p>
+          <h2 class="section-title" data-split>Engineering where AI, security and hardware meet.</h2>
+        </header>
+
+        <div class="about-grid">
+          <div class="about-copy">
+            <p data-reveal>
+              I'm <strong>Rahul Penugonda</strong>, a B.Tech Artificial Intelligence student at
+              <strong>Amrita Vishwa Vidyapeetham</strong> (2024–2028, CGPA 8.74), based in Hyderabad, India.
+              I like systems that cross boundaries — software that talks to hardware, models that run on
+              robots, and products that are secure by design.
+            </p>
+            <p data-reveal>
+              My work spans <strong>AI/ML and computer vision</strong>, <strong>cybersecurity and cloud security</strong>,
+              <strong>networking and Linux</strong>, <strong>embedded systems</strong> and <strong>full-stack</strong>
+              development. I've simulated an autonomous drone running onboard CNN inference, built an ESP32-CAM
+              face-recognition security system, repurposed a desktop into a NAS server, and shipped LLM-powered
+              web apps to production.
+            </p>
+            <p data-reveal>
+              I work documentation-first: understand the problem, debug to the root cause, test iteratively,
+              and leave behind something others can reproduce.
+            </p>
+            <div class="interest-cloud" data-reveal>
+              <span>Robotics</span><span>Embedded Systems</span><span>Computer Vision</span><span>IoT</span>
+              <span>Computer Networks</span><span>Cybersecurity</span><span>Linux</span><span>♟ Chess</span>
+            </div>
+          </div>
+
+          <div class="focus-grid">
+            <article class="focus-card tilt" data-reveal>
+              <div class="focus-ic" data-icon="brain"></div>
+              <h3>AI & Machine Learning</h3>
+              <p>TensorFlow, PyTorch, scikit-learn, Transformers and LLM APIs — from training CNNs to evaluating models honestly.</p>
+            </article>
+            <article class="focus-card tilt" data-reveal>
+              <div class="focus-ic" data-icon="eye"></div>
+              <h3>Vision & Robotics</h3>
+              <p>OpenCV pipelines, Webots simulation, D-H kinematics and sensor-driven navigation for aerial platforms.</p>
+            </article>
+            <article class="focus-card tilt" data-reveal>
+              <div class="focus-ic" data-icon="shield"></div>
+              <h3>Cyber & Cloud Security</h3>
+              <p>Network and cloud security, EDR, security operations and Prisma AIRS — certified by Palo Alto Networks.</p>
+            </article>
+            <article class="focus-card tilt" data-reveal>
+              <div class="focus-ic" data-icon="chip"></div>
+              <h3>Embedded & Networks</h3>
+              <p>ESP32, Arduino, firmware flashing and serial debugging, plus TCP/IP, SMB and Linux administration.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== JOURNEY ===================== -->
+    <section class="section" id="journey">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow" data-reveal><span>02</span> Journey</p>
+          <h2 class="section-title" data-split>Experience, recognition and education.</h2>
+        </header>
+
+        <div class="journey-grid">
+          <div class="timeline" data-timeline>
+            <h3 class="col-title" data-reveal>Experience & Recognition</h3>
+            <span class="timeline-line"><span></span></span>
+
+            <article class="t-item" data-reveal>
+              <span class="t-dot"></span>
+              <div class="t-card">
+                <div class="t-meta"><span class="t-date">Jul 2026 — Present</span><span class="t-tag">Remote</span></div>
+                <h4>Machine Learning Intern</h4>
+                <p class="t-org">FlyRank AI · Machine Learning Track</p>
+                <ul>
+                  <li>Building end-to-end ML projects — preprocessing, model development, evaluation and deployment.</li>
+                  <li>Capstone on Google Search ranking signals across 2.4M rows, with leakage-safe validation.</li>
+                </ul>
+                <a class="t-link" href="https://rahul9994.github.io/ML_Flyrank/" target="_blank" rel="noopener">Read the capstone report →</a>
+              </div>
+            </article>
+
+            <article class="t-item" data-reveal>
+              <span class="t-dot"></span>
+              <div class="t-card">
+                <div class="t-meta"><span class="t-date">May 2026</span><span class="t-tag gold">Recognition</span></div>
+                <h4>Google Student Ambassador</h4>
+                <p class="t-org">Google · Pitch Night Edition</p>
+                <ul>
+                  <li>Selected for the Google Student Ambassador Program 2026 and recognised at Pitch Night for creativity and innovation.</li>
+                  <li>Gemini Certified University Student (valid through 2028).</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="t-item" data-reveal>
+              <span class="t-dot"></span>
+              <div class="t-card">
+                <div class="t-meta"><span class="t-date">Jan 2026</span><span class="t-tag">Remote</span></div>
+                <h4>Student Intern</h4>
+                <p class="t-org">ShadowFox · Technology Project Team</p>
+                <ul>
+                  <li>Delivered ML tasks: housing-price regression, a car-price predictor and DeBERTa sentiment analysis.</li>
+                  <li>Owned documentation, tool setup and technical configuration on deadline-driven deliverables.</li>
+                </ul>
+                <a class="t-link" href="https://github.com/Rahul9994/ShadowFox" target="_blank" rel="noopener">View the work →</a>
+              </div>
+            </article>
+
+            <article class="t-item" data-reveal>
+              <span class="t-dot"></span>
+              <div class="t-card">
+                <div class="t-meta"><span class="t-date">2025</span><span class="t-tag">Hackathon</span></div>
+                <h4>DriveLegal AI — 24-hour build</h4>
+                <p class="t-org">Team hackathon</p>
+                <ul>
+                  <li>Flask chatbot on the Indian Motor Vehicles Act with a geo-fenced region selector and challan calculator.</li>
+                  <li>Integrated LLaMA 3.3 70B via OpenRouter; hardened API error handling under time pressure.</li>
+                </ul>
+              </div>
+            </article>
+          </div>
+
+          <div class="timeline" data-timeline>
+            <h3 class="col-title" data-reveal>Education</h3>
+            <span class="timeline-line"><span></span></span>
+
+            <article class="t-item" data-reveal>
+              <span class="t-dot"></span>
+              <div class="t-card edu">
+                <div class="t-meta"><span class="t-date">2024 — 2028</span><span class="t-score">CGPA 8.74</span></div>
+                <h4>B.Tech, Artificial Intelligence</h4>
+                <p class="t-org">Amrita Vishwa Vidyapeetham</p>
+                <div class="course-chips">
+                  <span>Robotics & Kinematics</span><span>Machine Learning</span><span>DSA</span>
+                  <span>Computer Networks</span><span>Cloud Computing</span><span>Cybersecurity</span><span>DBMS</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="t-item" data-reveal>
+              <span class="t-dot"></span>
+              <div class="t-card edu">
+                <div class="t-meta"><span class="t-date">Completed 2024</span><span class="t-score">960 / 1000</span></div>
+                <h4>Intermediate — Class XII</h4>
+                <p class="t-org">Sri Chaitanya College of Education · Telangana</p>
+              </div>
+            </article>
+
+            <article class="t-item" data-reveal>
+              <span class="t-dot"></span>
+              <div class="t-card edu">
+                <div class="t-meta"><span class="t-date">Completed 2022</span><span class="t-score">CGPA 9.5</span></div>
+                <h4>Secondary School — Class X</h4>
+                <p class="t-org">New Vision School · Khammam</p>
+              </div>
+            </article>
+
+            <div class="edu-quote" data-reveal>
+              <span class="q-mark">“</span>
+              <p>Build intelligent, secure and scalable systems — and document them so others can build on top.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== FEATURED PROJECTS ===================== -->
+    <section class="section" id="projects">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow" data-reveal><span>03</span> Signature builds</p>
+          <h2 class="section-title" data-split>Projects that cross the line between bits and atoms.</h2>
+        </header>
+        <div class="featured" id="featured"></div>
+      </div>
+    </section>
+
+    <!-- ===================== REPOS ===================== -->
+    <section class="section" id="repos">
+      <div class="container">
+        <header class="section-head split-head">
+          <div>
+            <p class="eyebrow" data-reveal><span>04</span> Open source</p>
+            <h2 class="section-title" data-split>Every repository, one place.</h2>
+          </div>
+          <a class="gh-card" href="https://github.com/Rahul9994" target="_blank" rel="noopener" data-reveal>
+            <img src="assets/img/avatar.webp" alt="" width="48" height="48" loading="lazy" />
+            <span><b>@Rahul9994</b><small><span id="ghRepoCount">35</span> public repositories</small></span>
+            <svg viewBox="0 0 24 24" class="ic"><path d="M7 17 17 7M8 7h9v9"/></svg>
+          </a>
+        </header>
+
+        <div class="repo-toolbar" data-reveal>
+          <div class="filter-chips" id="repoFilters" role="tablist" aria-label="Filter repositories"></div>
+          <label class="search">
+            <svg viewBox="0 0 24 24" class="ic"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="search" id="repoSearch" placeholder="Search repos, tech…" aria-label="Search repositories" />
+          </label>
+        </div>
+
+        <div class="repo-grid" id="repoGrid" aria-live="polite"></div>
+        <p class="repo-empty" id="repoEmpty" hidden>No repositories match that search.</p>
+        <div class="center">
+          <button class="btn btn-ghost" id="repoMore" type="button">Show all repositories</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SKILLS ===================== -->
+    <section class="section" id="skills">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow" data-reveal><span>05</span> Toolkit</p>
+          <h2 class="section-title" data-split>A wide stack, built hands-on.</h2>
+        </header>
+        <div class="skills-grid" id="skillsGrid"></div>
+      </div>
+    </section>
+
+    <!-- ===================== CERTIFICATES ===================== -->
+    <section class="section" id="certificates">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow" data-reveal><span>06</span> Credentials</p>
+          <h2 class="section-title" data-split>Certified by the companies building the future.</h2>
+        </header>
+
+        <div class="issuer-strip" data-reveal>
+          <span>Palo Alto Networks</span><span>Oracle</span><span>Google</span><span>NVIDIA</span><span>IBM</span>
+          <span>Microsoft</span><span>Anthropic</span><span>DeepLearning.AI</span><span>Kaggle</span><span>Udemy</span><span>Coursera</span><span>GeeksforGeeks</span>
+        </div>
+
+        <h3 class="sub-title" data-reveal>Badges</h3>
+        <div class="badge-row" id="badgeRow"></div>
+
+        <div class="cert-toolbar" data-reveal>
+          <h3 class="sub-title">Certificates <small id="certCount"></small></h3>
+          <div class="filter-chips" id="certFilters" role="tablist" aria-label="Filter certificates"></div>
+        </div>
+        <div class="cert-grid" id="certGrid"></div>
+      </div>
+    </section>
+
+    <!-- ===================== CONTACT ===================== -->
+    <section class="section contact" id="contact">
+      <div class="container">
+        <div class="contact-card" data-reveal>
+          <div class="contact-glow"></div>
+          <p class="eyebrow"><span>07</span> Contact</p>
+          <h2 class="contact-title" data-split>Let's build something <span class="grad-text">intelligent.</span></h2>
+          <p class="contact-lede">Open to internships, research collaborations and interesting problems in AI, computer vision and security. My inbox is always open.</p>
+          <div class="contact-actions">
+            <a class="btn btn-glow btn-lg magnetic" href="mailto:rockz0551@gmail.com">
+              <span data-icon="mail" class="ic-wrap"></span><span>rockz0551@gmail.com</span>
+            </a>
+            <button class="btn btn-ghost btn-lg" type="button" id="copyEmail"><span>Copy email</span></button>
+          </div>
+          <div class="contact-links">
+            <a href="https://www.linkedin.com/in/rahulpenugonda-86638137" target="_blank" rel="noopener" class="c-link">
+              <span data-icon="linkedin" class="ic-wrap"></span>
+              <span><b>LinkedIn</b><small>rahulpenugonda</small></span>
+              <svg viewBox="0 0 24 24" class="ic arrow"><path d="M7 17 17 7M8 7h9v9"/></svg>
+            </a>
+            <a href="https://github.com/Rahul9994" target="_blank" rel="noopener" class="c-link">
+              <span data-icon="github" class="ic-wrap"></span>
+              <span><b>GitHub</b><small>@Rahul9994</small></span>
+              <svg viewBox="0 0 24 24" class="ic arrow"><path d="M7 17 17 7M8 7h9v9"/></svg>
+            </a>
+            <a href="https://pr0mptnexus.liveblog365.com" target="_blank" rel="noopener" class="c-link">
+              <span data-icon="globe" class="ic-wrap"></span>
+              <span><b>PromptNexus</b><small>pr0mptnexus.liveblog365.com</small></span>
+              <svg viewBox="0 0 24 24" class="ic arrow"><path d="M7 17 17 7M8 7h9v9"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="logo-mark">RP</span>
+        <div>
+          <b>Rahul Penugonda</b>
+          <small>AI · Vision · Security · Embedded — Hyderabad, India</small>
+        </div>
+      </div>
+      <div class="footer-social" data-social></div>
+      <a href="#home" class="to-top" aria-label="Back to top">
+        <svg viewBox="0 0 24 24" class="ic"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+      </a>
+    </div>
+    <div class="container footer-base">
+      <small>© <span id="year"></span> Rahul Penugonda. Designed & built with care.</small>
+      <small class="footer-hint">Press <kbd>T</kbd> to switch theme</small>
+    </div>
+  </footer>
+
+  <!-- ===================== LIGHTBOX ===================== -->
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Certificate viewer" hidden>
+    <button class="lb-close" type="button" aria-label="Close"><svg viewBox="0 0 24 24" class="ic"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <button class="lb-nav prev" type="button" aria-label="Previous"><svg viewBox="0 0 24 24" class="ic"><path d="M15 6l-6 6 6 6"/></svg></button>
+    <figure class="lb-figure">
+      <img alt="" />
+      <figcaption><b></b><span></span></figcaption>
+    </figure>
+    <button class="lb-nav next" type="button" aria-label="Next"><svg viewBox="0 0 24 24" class="ic"><path d="M9 6l6 6-6 6"/></svg></button>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js" defer></script>
+  <script src="assets/js/data.js" defer></script>
+  <script src="assets/js/main.js" defer></script>
+</body>
+</html>
