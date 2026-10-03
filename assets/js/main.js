@@ -10,6 +10,7 @@
   const root = document.documentElement;
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const finePointer = matchMedia("(pointer: fine)").matches;
+  const LITE = root.dataset.perf === "lite"; // phones & low-power devices (decided in <head>)
   const isSmall = () => innerWidth < 720;
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -68,7 +69,8 @@
      ------------------------------------------------------------------------ */
   let lenis = null;
   function initSmoothScroll() {
-    if (window.Lenis && !reduceMotion) {
+    // phones already scroll natively and smoothly; JS-driven scrolling only adds latency there
+    if (window.Lenis && !reduceMotion && !LITE) {
       lenis = new window.Lenis({
         duration: 1.15,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -233,13 +235,13 @@
 
     function resize() {
       W = Math.max(1, innerWidth); H = Math.max(1, innerHeight);
-      DPR = Math.min(devicePixelRatio || 1, 1.5);
+      DPR = LITE ? 1 : Math.min(devicePixelRatio || 1, 1.5);
       // aurora renders at very low resolution; CSS upscaling gives a free, silky blur
       AW = Math.max(80, Math.round(W / 7)); AH = Math.max(60, Math.round(H / 7));
       aur.width = AW; aur.height = AH;
       st.width = Math.round(W * DPR); st.height = Math.round(H * DPR);
       sctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-      const count = Math.round(clamp((W * H) / 16000, 28, isSmall() ? 42 : 95));
+      const count = Math.round(clamp((W * H) / 16000, LITE ? 18 : 28, LITE ? 30 : isSmall() ? 42 : 95));
       particles = Array.from({ length: count }, () => ({
         x: Math.random() * W,
         y: Math.random() * H,
@@ -279,7 +281,7 @@
       sctx.clearRect(0, 0, W, H);
       pointer.x += (pointer.tx - pointer.x) * 0.06;
       pointer.y += (pointer.ty - pointer.y) * 0.06;
-      const LINK = isSmall() ? 90 : 120;
+      const LINK = LITE ? 80 : isSmall() ? 90 : 120;
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
         p.x += p.vx; p.y += p.vy; p.tw += 0.03;
@@ -296,17 +298,18 @@
         sctx.fillStyle = `rgba(${pal.star},${a})`;
         sctx.fill();
       }
+      // links are grouped into a few opacity buckets: one stroke() per bucket
+      // instead of one per line keeps the canvas cheap
       sctx.lineWidth = 0.8;
+      const buckets = [[], [], []];
+      const L2 = LINK * LINK;
       for (let i = 0; i < particles.length; i++) {
         const a = particles[i];
         for (let j = i + 1; j < particles.length; j++) {
           const b = particles[j];
           const dx = a.x - b.x, dy = a.y - b.y;
           const d = dx * dx + dy * dy;
-          if (d < LINK * LINK) {
-            sctx.strokeStyle = `rgba(${pal.link},${(1 - Math.sqrt(d) / LINK) * 0.22})`;
-            sctx.beginPath(); sctx.moveTo(a.x, a.y); sctx.lineTo(b.x, b.y); sctx.stroke();
-          }
+          if (d < L2) buckets[Math.min(2, (d / L2 * 3) | 0)].push(a.x, a.y, b.x, b.y);
         }
         if (pointer.active) {
           const dx = a.x - pointer.x, dy = a.y - pointer.y;
@@ -317,18 +320,41 @@
           }
         }
       }
+      buckets.forEach((seg, k) => {
+        if (!seg.length) return;
+        sctx.strokeStyle = `rgba(${pal.link},${0.2 - k * 0.06})`;
+        sctx.beginPath();
+        for (let n = 0; n < seg.length; n += 4) { sctx.moveTo(seg[n], seg[n + 1]); sctx.lineTo(seg[n + 2], seg[n + 3]); }
+        sctx.stroke();
+      });
     }
 
+    // Lite: draw at ~30fps and pause briefly while the user taps or scrolls,
+    // so the main thread is free to respond instantly.
+    let lastDraw = 0, busyUntil = 0;
+    const FRAME = LITE ? 1000 / 30 : 0;
     function loop(t) {
       requestAnimationFrame(loop);
-      if (!running || !innerWidth) return;
+      if (!running || !innerWidth || t < busyUntil || t - lastDraw < FRAME) return;
+      lastDraw = t;
       try { drawAurora(t); drawStars(); } catch (e) { resize(); }
     }
+    const markBusy = (ms) => { busyUntil = performance.now() + ms; };
 
     function init() {
       resize();
       let rT;
-      addEventListener("resize", () => { clearTimeout(rT); rT = setTimeout(resize, 150); });
+      addEventListener("resize", () => {
+        // mobile browsers fire resize when the URL bar slides in/out during scroll;
+        // rebuilding canvases then causes stutter, so ignore small height-only changes
+        if (innerWidth === W && Math.abs(innerHeight - H) < 160) return;
+        clearTimeout(rT); rT = setTimeout(resize, 150);
+      });
+      if (LITE) {
+        addEventListener("pointerdown", () => markBusy(450), { passive: true, capture: true });
+        addEventListener("touchstart", () => markBusy(450), { passive: true, capture: true });
+        addEventListener("scroll", () => markBusy(160), { passive: true });
+      }
       addEventListener("pointermove", (e) => { pointer.tx = e.clientX; pointer.ty = e.clientY; pointer.active = e.pointerType === "mouse"; }, { passive: true });
       document.addEventListener("pointerleave", () => { pointer.active = false; });
       document.addEventListener("visibilitychange", () => { running = !document.hidden; });
@@ -355,7 +381,7 @@
   }
   function toggleTheme(originEl) {
     const next = root.dataset.theme === "light" ? "dark" : "light";
-    if (!document.startViewTransition || reduceMotion) return applyTheme(next);
+    if (!document.startViewTransition || reduceMotion || LITE) return applyTheme(next);
     const r = (originEl || $("#themeToggle")).getBoundingClientRect();
     const x = r.left + r.width / 2, y = r.top + r.height / 2;
     const end = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
@@ -591,7 +617,8 @@
       const k = (depth + 1) / 2;
       const s = scaleMin + (1 - scaleMin) * k;
       el.style.transform = `translate3d(${(x - w / 2).toFixed(1)}px, ${(y - h / 2).toFixed(1)}px, 0) scale(${s.toFixed(3)})`;
-      el.style.zIndex = depth > 0 ? (w ? 4 : 3) : 1; // satellites (w = 0) stay under the cards
+      const z = depth > 0 ? (w ? 4 : 3) : 1; // satellites (w = 0) stay under the cards
+      if (el._z !== z) { el.style.zIndex = z; el._z = z; }
       el.style.opacity = (0.45 + 0.55 * k).toFixed(3);
       return depth;
     };
@@ -633,8 +660,11 @@
       satOrbit.forEach((s) => (s.el.style.display = "none"));
       return;
     }
+    // only animate while the hero is on screen
+    let visible = true;
+    new IntersectionObserver(([en]) => { visible = en.isIntersecting; }).observe(portrait);
     (function loop(now) {
-      if (!document.hidden) frame(now); else last = now;
+      if (!document.hidden && visible) frame(now); else last = now;
       requestAnimationFrame(loop);
     })(performance.now());
     addEventListener("resize", () => cards.forEach((c) => (c.w = 0)));

@@ -23,6 +23,14 @@
         if (!t) t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
         document.documentElement.setAttribute("data-theme", t);
       } catch (e) {}
+      // Phones / low-power devices get a lighter rendering path (no live blur,
+      // fewer repainting animations, native scrolling). ?perf=full forces the full one.
+      var q = location.search.match(/perf=(lite|full)/);
+      var lite = q ? q[1] === "lite" :
+        matchMedia("(pointer: coarse)").matches ||
+        (navigator.hardwareConcurrency || 8) <= 4 ||
+        (navigator.deviceMemory || 8) <= 4;
+      document.documentElement.setAttribute("data-perf", lite ? "lite" : "full");
     })();
   </script>
 
