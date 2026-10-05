@@ -44,6 +44,17 @@ python -m http.server 5500
 
 Then open http://localhost:5500.
 
+## Performance notes (keep these when editing)
+
+The site is tuned to stay smooth on phones. The rules that make that work:
+
+- **Animate only `transform` / `opacity`** (or the individual `translate`, `scale`, `rotate` properties). These run on the GPU compositor. Animating `width`, `top`, `clip-path`, `filter`, `background-position` etc. repaints on the main thread and causes jank.
+- **Scroll effects are CSS scroll-driven animations** (`animation-timeline`), not scroll listeners: the title sequence (`.mg.sda`), hero parallax, progress bar and journey lines. JS fallbacks exist for browsers without support.
+- **The hero orbit is pure CSS** (`.orb` keyframes). JS only swaps the skill text while a card is behind the photo.
+- **Phones get "lite" mode** (`data-perf="lite"`, decided in `<head>`): no live `backdrop-filter`, a background that is painted once and drifted with CSS, no Lenis (native scrolling). Add `?perf=full` or `?perf=lite` to the URL to force a mode when testing.
+- **Fonts are self-hosted** in `assets/fonts/` (variable WOFF2, subset to the characters the site uses). If you add text with new symbols, re-subset with `pyftsubset`, or the symbol falls back to a system font.
+- **Repo cards are built lazily** (only visible ones exist in the DOM) and the GitHub sync is deferred until the section is near.
+
 ## Notes
 
 - Keyboard: `T` toggles the theme, `Esc` skips the intro, arrow keys move through the certificate viewer.
