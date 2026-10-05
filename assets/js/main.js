@@ -11,9 +11,7 @@
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const finePointer = matchMedia("(pointer: fine)").matches;
   const LITE = root.dataset.perf === "lite"; // phones & low-power devices (decided in <head>)
-  // matchMedia answers from the viewport size without forcing a layout (innerWidth can)
-  const smallMQ = matchMedia("(max-width: 719.98px)");
-  const isSmall = () => smallMQ.matches;
+  const isSmall = () => innerWidth < 720;
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const store = {
@@ -70,16 +68,9 @@
      Smooth scroll (Lenis)
      ------------------------------------------------------------------------ */
   let lenis = null;
-  let introDone = false;
   function initSmoothScroll() {
-    // Phones scroll natively (already smooth, on the compositor), so they never
-    // even download Lenis. Desktop loads it after first paint.
-    if (reduceMotion || LITE) return;
-    const s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js";
-    s.async = true;
-    s.onload = () => {
-      if (!window.Lenis) return;
+    // phones already scroll natively and smoothly; JS-driven scrolling only adds latency there
+    if (window.Lenis && !reduceMotion && !LITE) {
       lenis = new window.Lenis({
         duration: 1.15,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -89,9 +80,8 @@
       });
       const raf = (time) => { lenis.raf(time); requestAnimationFrame(raf); };
       requestAnimationFrame(raf);
-      if (!introDone) lenis.stop();
-    };
-    document.head.appendChild(s);
+      lenis.stop();
+    }
   }
   const lockScroll = (on) => {
     if (lenis) on ? lenis.stop() : lenis.start();
@@ -151,10 +141,8 @@
       const p = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
       ring.style.strokeDashoffset = RING * (1 - p);
       bar.style.transform = `scaleX(${p})`;
-      // text only changes when its value does (no per-frame relayout)
-      const pv = String(Math.round(p * 100)).padStart(3, "0");
-      if (pct.textContent !== pv) pct.textContent = pv;
-      for (let i = states.length - 1; i >= 0; i--) if (p >= states[i][0]) { if (status.textContent !== states[i][1]) status.textContent = states[i][1]; break; }
+      pct.textContent = String(Math.round(p * 100)).padStart(3, "0");
+      for (let i = states.length - 1; i >= 0; i--) if (p >= states[i][0]) { status.textContent = states[i][1]; break; }
       while (shown < lines.length && t >= lines[shown][1]) {
         const div = document.createElement("div");
         div.innerHTML = lines[shown][0];
@@ -173,7 +161,6 @@
       store.sset("rp-booted", "1");
       boot.classList.add("is-leaving");
       document.body.classList.remove("is-booting");
-      removeEventListener("wheel", blockWheel);
       setTimeout(() => {
         document.body.classList.add("is-ready");
         onDone();
@@ -182,9 +169,6 @@
       removeEventListener("keydown", onKey);
     }
     const onKey = (e) => { if (e.key === "Escape" || e.key === "Enter" || e.key === " ") finish(); };
-    // keep the page still under the intro without touching body overflow
-    function blockWheel(e) { e.preventDefault(); }
-    addEventListener("wheel", blockWheel, { passive: false });
     addEventListener("keydown", onKey);
     $(".boot-skip", boot).addEventListener("click", finish);
     setTimeout(finish, DURATION + 600); // safety net if rAF is throttled (background tab)
@@ -195,12 +179,8 @@
     const target = el.dataset.scramble || el.textContent;
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#$%&*<>/";
     const start = performance.now();
-    let last = 0;
     (function step(now) {
       const t = clamp((now - start) / duration, 0, 1);
-      // ~24 updates/sec reads as a scramble and halves the text relayouts
-      if (t < 1 && now - last < 40) return requestAnimationFrame(step);
-      last = now;
       const revealed = Math.floor(t * target.length);
       let out = "";
       for (let i = 0; i < target.length; i++) {
@@ -221,7 +201,7 @@
     const st = $("#stars");
     const actx = aur.getContext("2d");
     const sctx = st.getContext("2d");
-    const pointer = { x: 0, y: 0, tx: 0, ty: 0, active: false }; // centred in init()
+    const pointer = { x: innerWidth / 2, y: innerHeight / 3, tx: innerWidth / 2, ty: innerHeight / 3, active: false };
     let W = 0, H = 0, AW = 0, AH = 0, DPR = 1;
     let particles = [];
     let theme = root.dataset.theme;
@@ -349,88 +329,20 @@
       });
     }
 
+    // Lite: draw at ~30fps and pause briefly while the user taps or scrolls,
+    // so the main thread is free to respond instantly.
+    let lastDraw = 0, busyUntil = 0;
+    const FRAME = LITE ? 1000 / 30 : 0;
     function loop(t) {
       requestAnimationFrame(loop);
-      if (!running || !innerWidth) return;
+      if (!running || !innerWidth || t < busyUntil || t - lastDraw < FRAME) return;
+      lastDraw = t;
       try { drawAurora(t); drawStars(); } catch (e) { resize(); }
     }
-
-    /* ---- Lite (phones): paint once, animate on the GPU only ----
-       The aurora is two tiny canvases (64×64) blown up by CSS — upscaling a
-       soft gradient costs nothing — and the starfield is drawn once into a
-       double-height canvas. CSS keyframes then drift/rotate/scroll them using
-       transform + opacity, which run on the compositor: zero main-thread work
-       per frame, so taps and scrolling never compete with the background. */
-    let lite = null;
-    const seeded = (k) => { const x = Math.sin(k * 91.7 + 13.3) * 43758.5453; return x - Math.floor(x); };
-    function buildLite() {
-      aur.style.display = "none";
-      st.style.display = "none";
-      const bg = $(".bg");
-      const before = $(".bg-grid", bg);
-      const mk = (cls) => { const c = document.createElement("canvas"); c.className = cls; c.setAttribute("aria-hidden", "true"); bg.insertBefore(c, before); return c; };
-      lite = { a: mk("lite-aurora la"), b: mk("lite-aurora lb"), s: mk("lite-stars"), t: mk("lite-stars twinkle"), w: 0 };
-      paintLite();
-    }
-    function paintLite() {
-      const pal = PALETTES[theme] || PALETTES.dark;
-      [[lite.a, [0, 2, 4]], [lite.b, [1, 3]]].forEach(([c, idx]) => {
-        c.width = c.height = 64;
-        const x = c.getContext("2d");
-        x.globalCompositeOperation = pal.comp;
-        idx.forEach((i) => {
-          const b = blobs[i];
-          const cx = b.x * 64, cy = b.y * 64, r = b.r * 64;
-          const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
-          g.addColorStop(0, `rgba(${pal.blobs[i]},${Math.min(1, pal.alpha[i] * 1.35)})`);
-          g.addColorStop(0.55, `rgba(${pal.blobs[i]},${pal.alpha[i] * 0.5})`);
-          g.addColorStop(1, `rgba(${pal.blobs[i]},0)`);
-          x.fillStyle = g;
-          x.fillRect(0, 0, 64, 64);
-        });
-      });
-      // starfield: one viewport of stars + faint links, repeated twice vertically
-      // so a translateY(-50%) loop is seamless
-      const w = Math.max(1, innerWidth), h = Math.max(1, Math.round(screen.height || innerHeight));
-      lite.w = w;
-      const stars = [];
-      const n = Math.round(clamp((w * h) / 9000, 30, 70));
-      for (let k = 0; k < n; k++) stars.push({ x: seeded(k) * w, y: seeded(k + 500) * h, r: 0.5 + seeded(k + 900) * 1.3, a: 0.25 + seeded(k + 1300) * 0.55 });
-      const drawField = (c, filter) => {
-        c.width = w; c.height = h * 2;
-        c.style.width = w + "px"; c.style.height = h * 2 + "px";
-        const x = c.getContext("2d");
-        for (const off of [0, h]) {
-          if (!filter) {
-            x.strokeStyle = `rgba(${pal.link},0.12)`;
-            x.lineWidth = 0.7;
-            x.beginPath();
-            for (let i = 0; i < stars.length; i++) for (let j = i + 1; j < stars.length; j++) {
-              const dx = stars[i].x - stars[j].x, dy = stars[i].y - stars[j].y;
-              if (dx * dx + dy * dy < 85 * 85) { x.moveTo(stars[i].x, stars[i].y + off); x.lineTo(stars[j].x, stars[j].y + off); }
-            }
-            x.stroke();
-          }
-          stars.forEach((p, i) => {
-            if (filter ? i % 4 !== 0 : i % 4 === 0) return; // every 4th star twinkles on its own layer
-            x.fillStyle = `rgba(${pal.star},${filter ? 0.9 : p.a})`;
-            x.beginPath(); x.arc(p.x, p.y + off, filter ? p.r + 0.5 : p.r, 0, Math.PI * 2); x.fill();
-          });
-        }
-      };
-      drawField(lite.s, false);
-      drawField(lite.t, true);
-    }
+    const markBusy = (ms) => { busyUntil = performance.now() + ms; };
 
     function init() {
-      if (LITE) {
-        buildLite();
-        addEventListener("resize", () => { if (innerWidth !== lite.w) paintLite(); });
-        return;
-      }
       resize();
-      pointer.x = pointer.tx = W / 2;
-      pointer.y = pointer.ty = H / 3;
       let rT;
       addEventListener("resize", () => {
         // mobile browsers fire resize when the URL bar slides in/out during scroll;
@@ -438,6 +350,11 @@
         if (innerWidth === W && Math.abs(innerHeight - H) < 160) return;
         clearTimeout(rT); rT = setTimeout(resize, 150);
       });
+      if (LITE) {
+        addEventListener("pointerdown", () => markBusy(450), { passive: true, capture: true });
+        addEventListener("touchstart", () => markBusy(450), { passive: true, capture: true });
+        addEventListener("scroll", () => markBusy(160), { passive: true });
+      }
       addEventListener("pointermove", (e) => { pointer.tx = e.clientX; pointer.ty = e.clientY; pointer.active = e.pointerType === "mouse"; }, { passive: true });
       document.addEventListener("pointerleave", () => { pointer.active = false; });
       document.addEventListener("visibilitychange", () => { running = !document.hidden; });
@@ -447,11 +364,7 @@
 
     return {
       init,
-      setTheme(t) {
-        theme = t;
-        if (lite) paintLite();
-        else if (reduceMotion) { drawAurora(0); drawStars(); }
-      },
+      setTheme(t) { theme = t; if (reduceMotion) { drawAurora(0); drawStars(); } },
       setScroll(p) { scrollP = p; },
     };
   })();
@@ -460,14 +373,11 @@
      Theme
      ------------------------------------------------------------------------ */
   function applyTheme(t) {
-    // one clean restyle: colour transitions are suspended for this frame
-    root.classList.add("theme-switching");
     root.dataset.theme = t;
     store.set("rp-theme", t);
     const meta = $('meta[name="theme-color"]');
     if (meta) meta.content = t === "light" ? "#f4f5ff" : "#05060f";
     Background.setTheme(t);
-    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("theme-switching")));
   }
   function toggleTheme(originEl) {
     const next = root.dataset.theme === "light" ? "dark" : "light";
@@ -493,20 +403,23 @@
      ------------------------------------------------------------------------ */
   const nav = $("#nav");
   const menuBtn = $("#menuToggle");
-  const menuEl = $("#mobileMenu");
-  let menuOpen = false;
-  function setMenu(open) {
-    if (open === menuOpen) return;
-    menuOpen = open;
-    menuEl.classList.toggle("is-open", open);
-    menuBtn.classList.toggle("is-open", open);
-    menuBtn.setAttribute("aria-expanded", String(open));
-    menuBtn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
-    menuEl.setAttribute("aria-hidden", String(!open));
-    lockScroll(open);
+  function closeMenu() {
+    if (!document.body.classList.contains("menu-open")) return;
+    document.body.classList.remove("menu-open");
+    menuBtn.setAttribute("aria-expanded", "false");
+    menuBtn.setAttribute("aria-label", "Open menu");
+    $("#mobileMenu").setAttribute("aria-hidden", "true");
+    lockScroll(false);
   }
-  function closeMenu() { setMenu(false); }
-  menuBtn.addEventListener("click", () => setMenu(!menuOpen));
+  menuBtn.addEventListener("click", () => {
+    const open = !document.body.classList.contains("menu-open");
+    if (!open) return closeMenu();
+    document.body.classList.add("menu-open");
+    menuBtn.setAttribute("aria-expanded", "true");
+    menuBtn.setAttribute("aria-label", "Close menu");
+    $("#mobileMenu").setAttribute("aria-hidden", "false");
+    lockScroll(true);
+  });
   addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(); });
 
   function initNavSpy() {
@@ -533,45 +446,34 @@
     const heroCopy = $(".hero-copy");
     const portrait = $("#portrait");
     const timelines = $$("[data-timeline]");
-    // progress bar, hero parallax and timeline lines run as CSS scroll-driven
-    // animations (compositor) where supported; JS only handles the nav then
-    const SDA_UI = !reduceMotion && window.CSS && CSS.supports && CSS.supports("animation-timeline: scroll()");
-    if (SDA_UI) root.classList.add("sda-ui");
     let lastY = scrollY;
     let ticking = false;
-
-    // layout values are cached (re-measured on resize / content changes),
-    // so the per-frame handler never forces a synchronous layout
-    let maxScroll = 1, tlGeo = [];
-    const measure = () => {
-      maxScroll = Math.max(1, document.documentElement.scrollHeight - innerHeight);
-      if (!SDA_UI) tlGeo = timelines.map((tl) => ({ top: tl.getBoundingClientRect().top + scrollY, h: tl.offsetHeight, line: $(".timeline-line span", tl) }));
-    };
-    if (window.ResizeObserver) new ResizeObserver(() => measure()).observe(document.body);
-    else requestAnimationFrame(measure);
-    addEventListener("resize", measure);
 
     function update() {
       ticking = false;
       const y = scrollY;
-      if (!LITE) Background.setScroll(y / maxScroll);
+      const max = document.documentElement.scrollHeight - innerHeight;
+      const p = max > 0 ? y / max : 0;
+      bar.style.transform = `scaleX(${p})`;
+      Background.setScroll(p);
 
       nav.classList.toggle("is-scrolled", y > 30);
-      const hide = y > lastY && y > innerHeight * 0.8 && !menuOpen;
+      const hide = y > lastY && y > innerHeight * 0.8 && !document.body.classList.contains("menu-open");
       nav.classList.toggle("is-hidden", hide);
       lastY = y;
 
-      if (SDA_UI || reduceMotion) return;
-      bar.style.transform = `scaleX(${(y / maxScroll).toFixed(4)})`;
-      if (y < innerHeight * 1.1) {
+      if (y < innerHeight * 1.1 && !reduceMotion) {
         const k = y / innerHeight;
         heroCopy.style.transform = `translate3d(0, ${y * 0.12}px, 0)`;
         heroCopy.style.opacity = String(clamp(1 - k * 1.1, 0, 1));
         portrait.style.transform = `translate3d(0, ${y * 0.22}px, 0) scale(${1 - k * 0.08})`;
       }
-      tlGeo.forEach((g) => {
-        const prog = clamp((y + innerHeight * 0.65 - g.top) / g.h, 0, 1);
-        if (g.line) g.line.style.setProperty("--p", prog.toFixed(3));
+
+      timelines.forEach((tl) => {
+        const r = tl.getBoundingClientRect();
+        const prog = clamp((innerHeight * 0.65 - r.top) / r.height, 0, 1);
+        const line = $(".timeline-line span", tl);
+        if (line) line.style.setProperty("--p", prog.toFixed(3));
       });
     }
     addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
@@ -657,11 +559,7 @@
     ];
     if (reduceMotion) { el.textContent = phrases[0]; return; }
     let pi = 0, ci = 0, deleting = false;
-    // stop typing while the hero is off-screen (each letter is a relayout)
-    let onScreen = true;
-    new IntersectionObserver(([en]) => { onScreen = en.isIntersecting; }).observe(el);
     (function tick() {
-      if (!onScreen || document.hidden) return setTimeout(tick, 400);
       const word = phrases[pi];
       ci += deleting ? -1 : 1;
       el.textContent = word.slice(0, ci);
@@ -674,42 +572,29 @@
 
   /* ------------------------------------------------------------------------
      Hero orbit: skill cards travel a tilted ring around the photo, passing
-     in front along the bottom and behind it at the top, where they swap skills.
-
-     The motion is pure CSS (see "Orbiting skill ring" in style.css): an x and a
-     y oscillation with sine-like easing trace the ellipse, all on the GPU
-     compositor — so it never stutters, even while the phone is busy. JS only
-     draws the ring once, swaps the skills while a card is hidden, and slows
-     the orbit on hover via the Web Animations API.
+     in front along the bottom and behind it at the top, where they swap skills
      ------------------------------------------------------------------------ */
   function initOrbit() {
     const portrait = $("#portrait");
-    if (!portrait) return;
     const orbiters = $$("[data-orbiter]", portrait);
     const sats = $$(".satellite", portrait);
-    if (!orbiters.length) return;
+    if (!portrait || !orbiters.length) return;
 
-    // ring geometry (must match the cqw values in the orb keyframes)
-    const CX = 50, CY = 55, RX = 52, RY = 25, TILT = -12;
-    const backD = `M ${CX - RX} ${CY} A ${RX} ${RY} 0 0 1 ${CX + RX} ${CY}`;
-    const frontD = `M ${CX + RX} ${CY} A ${RX} ${RY} 0 0 1 ${CX - RX} ${CY}`;
+    // ring geometry, as fractions of the portrait size
+    const CX = 0.5, CY = 0.55, RX = 0.52, RY = 0.25, TILT = (-12 * Math.PI) / 180;
+    const cosT = Math.cos(TILT), sinT = Math.sin(TILT);
+    const TAU = Math.PI * 2;
+    const BACK = Math.PI * 1.5; // top of the ring = hidden behind the photo
+
+    // draw the ring halves (SVG units 0–100)
+    const tiltDeg = (TILT * 180) / Math.PI;
+    const cx = CX * 100, cy = CY * 100, rx = RX * 100, ry = RY * 100;
+    const backD = `M ${cx - rx} ${cy} A ${rx} ${ry} 0 0 1 ${cx + rx} ${cy}`;
+    const frontD = `M ${cx + rx} ${cy} A ${rx} ${ry} 0 0 1 ${cx - rx} ${cy}`;
     $$(".ring-back path", portrait).forEach((p) => p.setAttribute("d", backD));
     $$(".ring-front path", portrait).forEach((p) => p.setAttribute("d", frontD));
-    $$(".ring-tilt", portrait).forEach((g) => g.setAttribute("transform", `rotate(${TILT} ${CX} ${CY})`));
+    $$(".ring-tilt", portrait).forEach((g) => g.setAttribute("transform", `rotate(${tiltDeg} ${cx} ${cy})`));
 
-    // wrap each mover: .orb (z-index front/back) > .orb-tilt > .orb-x > .orb-y > item
-    const wrap = (el, n, phase, dur, isSat) => {
-      const orb = document.createElement("div");
-      orb.className = isSat ? "orb sat" : "orb";
-      orb.dataset.n = n;
-      orb.style.setProperty("--phase", phase.toFixed(4));
-      orb.style.setProperty("--dur", `${dur.toFixed(2)}s`);
-      orb.innerHTML = '<div class="orb-tilt"><div class="orb-x"><div class="orb-y"></div></div></div>';
-      el.parentNode.insertBefore(orb, el);
-      $(".orb-y", orb).appendChild(el);
-      return $(".orb-y", orb);
-    };
-    const PERIOD = 18;
     const fill = (el, set) => {
       el.innerHTML = `<span class="orb-label">${esc(set.label)}</span>
         <span class="orb-skills">${set.skills.map((s) => `<span>${esc(s)}</span>`).join("")}</span>`;
@@ -717,104 +602,111 @@
     const cards = orbiters.map((el, n) => {
       const sets = D.heroChips[n] || [];
       if (sets.length) fill(el, sets[0]);
-      // cards sit half a revolution apart
-      const y = wrap(el, n, n / orbiters.length + 0.075, PERIOD, false);
-      return { el, sets, i: 0, y, prev: null };
+      return { el, sets, i: 0, offset: (n * TAU) / orbiters.length + Math.PI * 0.15 };
     });
-    sats.forEach((el, n) => {
-      const speed = 1.6 + n * 0.45;
-      wrap(el, n, ((n * 2.1 + 0.6) / (Math.PI * 2)) % 1, PERIOD / speed, true);
-    });
-    if (reduceMotion) return;
+    const satOrbit = sats.map((el, n) => ({ el, offset: n * 2.1 + 0.6, speed: 1.6 + n * 0.45 }));
 
-    const orbAnims = () => portrait.getAnimations({ subtree: true }).filter((a) => /^orb/.test(a.animationName || ""));
+    let size = portrait.offsetWidth;
+    addEventListener("resize", () => { size = portrait.offsetWidth; });
 
-    // swap a card's skills while it is behind the photo (75% of a revolution)
-    let visible = true;
-    new IntersectionObserver(([en]) => { visible = en.isIntersecting; }).observe(portrait);
-    setInterval(() => {
-      if (!visible || document.hidden) return;
+    const place = (el, ang, scaleMin, w, h) => {
+      const ex = Math.cos(ang) * RX * size, ey = Math.sin(ang) * RY * size;
+      const x = CX * size + ex * cosT - ey * sinT;
+      const y = CY * size + ex * sinT + ey * cosT;
+      const depth = Math.sin(ang); // +1 front (bottom), −1 back (top)
+      const k = (depth + 1) / 2;
+      const s = scaleMin + (1 - scaleMin) * k;
+      el.style.transform = `translate3d(${(x - w / 2).toFixed(1)}px, ${(y - h / 2).toFixed(1)}px, 0) scale(${s.toFixed(3)})`;
+      const z = depth > 0 ? (w ? 4 : 3) : 1; // satellites (w = 0) stay under the cards
+      if (el._z !== z) { el.style.zIndex = z; el._z = z; }
+      el.style.opacity = (0.45 + 0.55 * k).toFixed(3);
+      return depth;
+    };
+
+    const PERIOD = 18000; // ms per revolution
+    let theta = 0, speed = 1, target = 1, last = performance.now();
+    portrait.addEventListener("pointerenter", () => { target = 0.25; });
+    portrait.addEventListener("pointerleave", () => { target = 1; });
+
+    function frame(now) {
+      const dt = Math.min(64, now - last);
+      last = now;
+      speed += (target - speed) * 0.05;
+      theta += (dt / PERIOD) * TAU * speed;
+
       cards.forEach((c) => {
-        if (c.sets.length < 2) return;
-        const a = c.y.getAnimations()[0];
-        if (!a) return;
-        const prog = a.effect.getComputedTiming().progress;
-        if (prog == null) return;
-        if (c.prev !== null && c.prev < 0.75 && prog >= 0.75 && prog < 0.9) {
+        const ang = (theta + c.offset) % TAU;
+        const prev = c.prevAng ?? ang;
+        // swap skills the moment the card crosses the hidden back point
+        const crossed = prev < BACK && ang >= BACK;
+        if (crossed && c.sets.length > 1) {
           c.i = (c.i + 1) % c.sets.length;
           fill(c.el, c.sets[c.i]);
           c.el.classList.add("is-swap");
           void c.el.offsetWidth;
           c.el.classList.remove("is-swap");
+          c.w = 0;
         }
-        c.prev = prog;
+        c.prevAng = ang;
+        if (!c.w) { c.w = c.el.offsetWidth; c.h = c.el.offsetHeight; }
+        place(c.el, ang, 0.74, c.w, c.h);
       });
-    }, 200);
-
-    // ease the orbit down to a gentle drift on hover (desktop)
-    let rateTimer = 0;
-    const easeRate = (to) => {
-      clearInterval(rateTimer);
-      let rate = orbAnims()[0] ? orbAnims()[0].playbackRate : 1;
-      rateTimer = setInterval(() => {
-        rate += (to - rate) * 0.35;
-        if (Math.abs(to - rate) < 0.02) { rate = to; clearInterval(rateTimer); }
-        orbAnims().forEach((a) => a.updatePlaybackRate(rate));
-      }, 60);
-    };
-    if (finePointer) {
-      portrait.addEventListener("pointerenter", () => easeRate(0.25));
-      portrait.addEventListener("pointerleave", () => easeRate(1));
+      satOrbit.forEach((s) => place(s.el, (theta * s.speed + s.offset) % TAU, 0.5, 0, 0));
     }
+
+    if (reduceMotion) {
+      // still layout: cards rest on either side of the photo
+      cards.forEach((c, n) => { c.w = c.el.offsetWidth; c.h = c.el.offsetHeight; place(c.el, n ? Math.PI * 0.8 : Math.PI * 0.2, 0.74, c.w, c.h); });
+      satOrbit.forEach((s) => (s.el.style.display = "none"));
+      return;
+    }
+    // only animate while the hero is on screen
+    let visible = true;
+    new IntersectionObserver(([en]) => { visible = en.isIntersecting; }).observe(portrait);
+    (function loop(now) {
+      if (!document.hidden && visible) frame(now); else last = now;
+      requestAnimationFrame(loop);
+    })(performance.now());
+    addEventListener("resize", () => cards.forEach((c) => (c.w = 0)));
   }
 
   /* ------------------------------------------------------------------------
-     Title sequence: a pinned, scroll-scrubbed motion graphic of the name,
-     paced like a 5-second, 24fps title card (120 "frames" of scroll).
-
-     Where CSS scroll-driven animations exist (Chrome/Edge 115+, Safari 26+)
-     every pose is a CSS animation on the compositor (.mg.sda in style.css),
-     so it is locked to the finger with zero JS per frame. JS then only
-     measures once and updates the cheap extras (timecode, decode text,
-     sparks). Elsewhere, render() below drives the same poses from JS.
-     Either way each frame is a pure function of progress p (0–1), so
-     scrolling back rewinds it exactly — sparks included.
+     Title sequence: a pinned, scroll-scrubbed motion graphic of the name.
+     Paced like a 5-second, 24fps title card (120 "frames" of scroll).
+     Every frame is a pure function of progress p (0–1), so scrolling back
+     rewinds it exactly — sparks included.
      ------------------------------------------------------------------------ */
   function initTitleSequence() {
     const sec = $("#sequence");
     if (!sec) return;
-    const SDA = !reduceMotion && window.CSS && CSS.supports && CSS.supports("animation-timeline: view()");
     const stage = $(".mg-stage", sec);
     const dim = $(".mg-dim", sec);
-    const dimBg = $(".mg-dim-bg", sec);
-    const hint = $(".mg-hint", sec);
     const floor = $(".mg-floor", sec);
-    const grid = $(".mg-floor i", sec);
+    const plane = $(".mg-floor span", sec);
     const glow = $(".mg-glow", sec);
     const hud = $(".mg-hud", sec);
     const tc = $(".mg-tc", sec);
     const fc = $(".mg-fc", sec);
     const prog = $(".mg-progress span", sec);
     const bars = $$(".mg-bar", sec);
+    const hint = $(".mg-hint", sec);
     const name = $(".mg-name", sec);
-    const tagBox = $(".mg-tags", sec);
     const tags = $$(".mg-tags span", sec);
     const canvas = $(".mg-particles", sec);
     const ctx = canvas.getContext("2d");
-    const rails = $$(".social-rail, .email-rail");
 
     // Letters are inline-block spans (so each can move); the fill and sheen
     // overlays are plain text with kerning off, so they line up exactly.
     const build = (line, withFill) => {
       const text = line.dataset.text;
-      line.innerHTML = [...text].map((c, i) => `<span class="mg-ch" style="--i:${i}">${c}</span>`).join("") +
-        (withFill ? `<span class="mg-layer mg-fillwrap"><span class="mg-fill">${text}</span></span>` : "") +
+      line.innerHTML = [...text].map((c) => `<span class="mg-ch">${c}</span>`).join("") +
+        (withFill ? `<span class="mg-layer mg-fill">${text}</span>` : "") +
         `<span class="mg-layer mg-sheen">${text}</span>`;
       return $$(".mg-ch", line);
     };
     const l1 = $(".mg-l1", sec), l2 = $(".mg-l2", sec);
     const L1 = build(l1, false), L2 = build(l2, true);
-    const fillWin = $(".mg-fillwrap", l2), fillTxt = $(".mg-fill", l2);
+    const fill = $(".mg-fill", l2);
     const sheens = $$(".mg-sheen", sec);
     const tagWords = tags.map((t) => t.dataset.text);
     const tagShown = tags.map(() => null);
@@ -827,7 +719,7 @@
     const pad = (n, l = 2) => String(n).padStart(l, "0");
     const GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&*/<>";
     const BLUR = !LITE;
-    const SPARKS = LITE ? 50 : 150;
+    const SPARKS = LITE ? 60 : 150;
     const SPARK_COLORS = ["165,243,252", "196,181,253", "249,168,212", "253,230,138"];
 
     // geometry, measured without transforms (offset*), so it is stable mid-zoom
@@ -857,8 +749,6 @@
         W: stage.clientWidth,
         H: stage.clientHeight,
       };
-      geo.gap = geo.nh / 2 + fs * 0.14;
-      stage.style.setProperty("--gap", `${geo.gap.toFixed(1)}px`);
       bars.forEach((b) => (b.style.top = `${(geo.ny + geo.nh / 2).toFixed(1)}px`));
       const dpr = LITE ? 1 : Math.min(devicePixelRatio || 1, 2);
       canvas.width = Math.round(geo.W * dpr);
@@ -903,47 +793,35 @@
       }
     }
 
-    // the cheap, text/canvas parts — used by both engines
-    function extras(p) {
-      const f = Math.round(p * 120);
-      setText(tc, `00:00:0${Math.floor(f / 24)}:${pad(f % 24)}`);
-      setText(fc, `FRAME ${pad(f, 3)} / 120`);
-      const tick = Math.floor(p * 180);
-      tags.forEach((el, i) => {
-        const a = 0.54 + i * 0.03;
-        const t = seg(p, a, a + 0.1);
-        const w = tagWords[i];
-        const n = Math.floor(t * w.length);
-        let out = "";
-        for (let k = 0; k < w.length; k++) {
-          out += k < n || w[k] === " " ? w[k] : GLYPHS[(rnd(k * 13 + i * 101 + tick) * GLYPHS.length) | 0];
-        }
-        if (tagShown[i] !== out) { tagShown[i] = out; el.textContent = out; }
-      });
-      sparks(p);
-    }
-
-    // JS engine: the same poses the CSS engine produces
-    function poses(raw) {
+    function render(raw) {
+      if (!geo) measure();
       const p = clamp(raw, 0, 1);
+
+      // lights dim as the section arrives, and come back up on the way out
       const lightsOn = seg(raw, -0.14, 0.04);
-      dim.style.opacity = lightsOn.toFixed(3);
-      dimBg.style.opacity = (1 - seg(p, 0.9, 1)).toFixed(3);
-      hint.style.opacity = (1 - seg(p, 0.015, 0.06)).toFixed(3);
+      const lightsOff = seg(p, 0.9, 1);
+      dim.style.opacity = (lightsOn * (1 - lightsOff)).toFixed(3);
+      hint.style.opacity = (lightsOn * (1 - seg(p, 0.015, 0.06))).toFixed(3);
 
       const outro = 1 - seg(p, 0.78, 0.88);
       hud.style.opacity = (seg(p, 0.03, 0.11) * outro).toFixed(3);
       floor.style.opacity = (seg(p, 0.02, 0.16) * outro).toFixed(3);
-      grid.style.transform = `translate3d(0, ${((p * 2560) % 64).toFixed(1)}px, 0)`;
+      plane.style.transform = `rotateX(74deg) translate3d(0, ${((p * 2560) % 64).toFixed(1)}px, 0)`;
       glow.style.opacity = (seg(p, 0.2, 0.46) * (1 - seg(p, 0.82, 0.95))).toFixed(3);
+
+      // timecode: 5 s @ 24 fps
+      const f = Math.round(p * 120);
+      setText(tc, `00:00:0${Math.floor(f / 24)}:${pad(f % 24)}`);
+      setText(fc, `FRAME ${pad(f, 3)} / 120`);
       prog.style.transform = `scaleX(${p.toFixed(4)})`;
 
       // light streak draws, then splits into two frame bars around the name
       const streak = out3(seg(p, 0.03, 0.16));
       const split = io3(seg(p, 0.16, 0.3));
+      const gap = geo.nh / 2 + geo.fs * 0.14;
       bars.forEach((b, i) => {
         b.style.opacity = streak > 0 ? outro.toFixed(3) : "0";
-        b.style.transform = `translate3d(0, ${((i ? 1 : -1) * geo.gap * split).toFixed(1)}px, 0) scaleX(${(streak * (1 - 0.3 * split)).toFixed(4)})`;
+        b.style.transform = `translate3d(0, ${((i ? 1 : -1) * gap * split).toFixed(1)}px, 0) scaleX(${(streak * (1 - 0.3 * split)).toFixed(4)})`;
       });
 
       // RAHUL — letters flip up out of a mask while the tracking closes in
@@ -956,10 +834,9 @@
         const t = out3(seg(p, 0.22 + i * 0.016, 0.38 + i * 0.016));
         letter(el, t, `translate3d(0, ${(-0.2 * (1 - t)).toFixed(3)}em, 0) scale(${(1.9 - 0.9 * t).toFixed(3)})`);
       });
-      // …then the gradient wipes in (moving window + counter-moving text)
+      // …then the gradient wipes in
       const fp = io3(seg(p, 0.4, 0.56));
-      fillWin.style.translate = `${((fp - 1) * 100).toFixed(2)}% 0`;
-      fillTxt.style.translate = `${((1 - fp) * 100).toFixed(2)}% 0`;
+      fill.style.clipPath = `inset(-20% ${((1 - fp) * 100).toFixed(2)}% -20% 0)`;
 
       // specular sweep across both lines
       const sh = seg(p, 0.56, 0.7);
@@ -968,20 +845,27 @@
         el.style.backgroundPosition = `${(100 - sh * 100).toFixed(1)}% 0`;
       });
 
-      // title tags fade in, then the row fades out with the outro
-      tags.forEach((el, i) => { el.style.opacity = seg(p, 0.54 + i * 0.03, 0.585 + i * 0.03).toFixed(3); });
-      tagBox.style.opacity = outro.toFixed(3);
+      // title tags decode in
+      const tick = Math.floor(p * 180);
+      tags.forEach((el, i) => {
+        const a = 0.54 + i * 0.03;
+        const t = seg(p, a, a + 0.1);
+        el.style.opacity = (Math.min(1, t * 2.2) * outro).toFixed(3);
+        const w = tagWords[i];
+        const n = Math.floor(t * w.length);
+        let out = "";
+        for (let k = 0; k < w.length; k++) {
+          out += k < n || w[k] === " " ? w[k] : GLYPHS[(rnd(k * 13 + i * 101 + tick) * GLYPHS.length) | 0];
+        }
+        if (tagShown[i] !== out) { tagShown[i] = out; el.textContent = out; }
+      });
 
       // camera flies through the "O" into the next section
       const z = in3(seg(p, 0.8, 1));
       name.style.transform = z > 0 ? `scale(${(1 + z * 64).toFixed(3)})` : "";
       name.style.opacity = (1 - seg(p, 0.95, 1)).toFixed(3);
-    }
 
-    function render(raw) {
-      if (!geo) measure();
-      if (!SDA) poses(raw);
-      extras(clamp(raw, 0, 1));
+      sparks(p);
     }
 
     if (reduceMotion) {
@@ -989,23 +873,25 @@
       render(0.75);
       return;
     }
-    if (SDA) sec.classList.add("sda");
 
-    // scroll → progress (reads happen in the scroll event, writes in rAF)
-    let raw = 0, cur = null, raf = 0, visible = false, active = false;
+    // scroll → progress. Desktop (Lenis) gets a touch of easing on top;
+    // phones follow native scroll 1:1 so it never feels behind your finger.
+    let raw = 0, cur = null, raf = 0, visible = false;
+    // the timeline ends while 60vh of the section remains, which is where the
+    // next section (pulled up by margin-bottom: -60vh) starts rising in
     const read = () => {
       const r = sec.getBoundingClientRect();
-      const total = r.height - innerHeight;
+      const total = r.height - innerHeight * 1.6;
       return total > 0 ? -r.top / total : 0;
     };
+    let active = false;
     function frame() {
       raf = 0;
-      // the JS engine on desktop gets a touch of easing; everything else is 1:1
-      cur += (raw - cur) * (SDA || LITE ? 1 : 0.32);
+      cur += (raw - cur) * (LITE ? 1 : 0.32);
       if (Math.abs(raw - cur) < 0.0004) cur = raw;
       render(cur);
       const on = cur > 0.005 && cur < 0.97;
-      if (on !== active) { active = on; rails.forEach((r) => r.classList.toggle("is-muted", on)); }
+      if (on !== active) { active = on; document.body.classList.toggle("mg-active", on); }
       if (cur !== raw) raf = requestAnimationFrame(frame);
     }
     const update = () => {
@@ -1018,18 +904,6 @@
     addEventListener("scroll", update, { passive: true });
     addEventListener("resize", () => { geo = null; update(); });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { geo = null; update(); });
-  }
-
-  /* ------------------------------------------------------------------------
-     Pause looping CSS animations in zones that are off-screen. (Scroll-driven
-     animations are never inside these zones' descendants, so they keep working.)
-     ------------------------------------------------------------------------ */
-  function initAnimationZones() {
-    const zones = $$(".portrait, .hero-copy, .scroll-cue, .marquee, .feat-media, .repo-grid, .badge-row, .contact-card, .mg-hint");
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((en) => en.target.classList.toggle("anim-off", !en.isIntersecting));
-    }, { rootMargin: "120px 0px" });
-    zones.forEach((z) => io.observe(z));
   }
 
   /* ------------------------------------------------------------------------
@@ -1149,8 +1023,9 @@
            <span class="gc-glyph">${esc(glyph)}</span>
          </div>`;
     const lang = r.lang || "Docs";
+    const search = [r.name, r.title, r.desc, lang, (r.tags || []).join(" "), D.repoCats[r.cat]].join(" ").toLowerCase();
     return `
-      <article class="repo tilt" data-cat="${r.cat}">
+      <article class="repo tilt" data-cat="${r.cat}" data-search="${esc(search)}">
         <div class="repo-cover">
           ${cover}
           <div class="repo-badges">
@@ -1187,50 +1062,37 @@
     ).join("");
   }
 
-  // Cards are built lazily: only the ones on screen exist in the DOM (9 of 36
-  // by default), which keeps style/layout work small on phones.
-  const cardCache = new Map();
-  const repoSearchText = (r) => (r._search ||= [r.name, r.title, r.desc, r.lang || "Docs", (r.tags || []).join(" "), D.repoCats[r.cat]].join(" ").toLowerCase());
-  function cardFor(r) {
-    let el = cardCache.get(r.name);
-    if (!el) {
-      const t = document.createElement("template");
-      t.innerHTML = repoCard(r).trim();
-      el = t.content.firstElementChild;
-      cardCache.set(r.name, el);
-    }
-    return el;
-  }
-
   function renderRepos() {
     sortRepos();
+    $("#repoGrid").innerHTML = repos.map(repoCard).join("");
     renderRepoFilters();
     applyRepoFilter(false);
+    bindTilt($("#repoGrid"));
     $$("#repoCount, #ghRepoCount").forEach((el) => {
       if (el.id === "ghRepoCount" || document.body.classList.contains("is-ready")) el.textContent = repos.length;
       el.dataset.count = repos.length;
     });
   }
 
-  let shownNames = "";
   function applyRepoFilter(animate = true) {
-    const grid = $("#repoGrid");
     const limit = isSmall() ? 6 : 9;
+    const cards = $$("#repoGrid .repo");
     const filtering = repoFilter !== "all" || repoQuery;
-    const matched = repos.filter((r) => (repoFilter === "all" || r.cat === repoFilter) && (!repoQuery || repoSearchText(r).includes(repoQuery)));
-    const visible = filtering || repoExpanded ? matched : matched.slice(0, limit);
-    const names = visible.map((r) => r.name).join("|");
-    if (names !== shownNames || animate) {
-      shownNames = names;
-      const els = visible.map((r, i) => { const el = cardFor(r); el.style.setProperty("--i", i); return el; });
-      if (animate) els.forEach((el) => { el.style.animation = "none"; void el.offsetWidth; el.style.animation = ""; });
-      grid.replaceChildren(...els);
-      bindTilt(grid);
-    }
-    $("#repoEmpty").hidden = matched.length > 0;
+    let shown = 0, matched = 0;
+    cards.forEach((card) => {
+      const match = (repoFilter === "all" || card.dataset.cat === repoFilter) && (!repoQuery || card.dataset.search.includes(repoQuery));
+      if (match) matched++;
+      const visible = match && (filtering || repoExpanded || matched <= limit);
+      card.classList.toggle("is-hidden", !visible);
+      if (visible) {
+        card.style.setProperty("--i", shown++);
+        if (animate) { card.style.animation = "none"; void card.offsetWidth; card.style.animation = ""; }
+      }
+    });
+    $("#repoEmpty").hidden = matched > 0;
     const more = $("#repoMore");
-    more.hidden = filtering || matched.length <= limit;
-    more.textContent = repoExpanded ? "Show fewer" : `Show all ${matched.length} repositories`;
+    more.hidden = filtering || matched <= limit;
+    more.textContent = repoExpanded ? "Show fewer" : `Show all ${matched} repositories`;
   }
 
   function initRepos() {
@@ -1253,13 +1115,7 @@
       if (!repoExpanded) scrollToTarget($("#repos"));
       if (lenis) setTimeout(() => lenis.resize(), 50);
     });
-    // the live GitHub sync waits until the section is near (or the page is idle),
-    // so it never competes with the intro or first scroll
-    let started = false;
-    const go = () => { if (!started) { started = true; fetchLiveRepos(); } };
-    const io = new IntersectionObserver(([en]) => { if (en.isIntersecting) { io.disconnect(); go(); } }, { rootMargin: "1500px 0px" });
-    io.observe($("#repos"));
-    (window.requestIdleCallback || ((f) => setTimeout(f, 1)))(() => setTimeout(go, 6000), { timeout: 8000 });
+    fetchLiveRepos();
   }
 
   // Pull the live repo list so new repos appear without editing the site.
@@ -1280,8 +1136,6 @@
       } catch (e) { return; }
     }
     if (!Array.isArray(data) || !data.length) return;
-    const signature = () => repos.map((r) => `${r.name}:${r.stars || 0}:${fmtDate(r.updated)}`).sort().join("|");
-    const before = signature();
     const known = new Map(repos.map((r) => [r.name, r]));
     data.forEach((g) => {
       const r = known.get(g.name);
@@ -1303,9 +1157,6 @@
         });
       }
     });
-    if (signature() === before) return; // nothing visible changed — no re-render
-    cardCache.clear();
-    shownNames = "";
     renderRepos();
     if (revealIO) observeReveals($("#repos"));
   }
@@ -1546,51 +1397,33 @@
   /* ------------------------------------------------------------------------
      Boot it all up
      ------------------------------------------------------------------------ */
-  // Startup is split so the intro paints immediately: the boot screen and
-  // background start first, then the rest of the page is built in small
-  // chunks that yield to the browser between steps (the intro covers it).
-  const yieldToMain = () =>
-    window.scheduler && scheduler.yield ? scheduler.yield() : new Promise((r) => setTimeout(r, 0));
-  let pageBuilt;
-  const built = new Promise((r) => (pageBuilt = r));
-
   hydrateIcons();
+  renderMarquee();
+  initOrbit();
+  initTitleSequence();
+  renderFeatured();
+  renderSkills();
+  initRepos();
+  initCerts();
+  $("#certStat").dataset.count = D.certs.length;
+  hydrateIcons($("#featured"));
   Background.init();
+  initSmoothScroll();
+  initReveals();
+  initNavSpy();
+  initScrollUI();
+  bindTilt();
+  initMagnetic();
+  initCursor();
+
   runBoot(() => {
-    introDone = true;
     if (lenis) lenis.start();
     initCounters();
     setTimeout(initRotator, 700);
     // honour deep links like /#certificates after the intro
     if (location.hash && location.hash.length > 1) {
-      built.then(() => {
-        const t = $(location.hash);
-        if (t) setTimeout(() => scrollToTarget(t), 400);
-      });
+      const t = $(location.hash);
+      if (t) setTimeout(() => scrollToTarget(t), 400);
     }
   });
-
-  (async () => {
-    const steps = [
-      renderMarquee,
-      initOrbit,
-      initTitleSequence,
-      renderFeatured,
-      renderSkills,
-      initRepos,
-      initCerts,
-      () => { $("#certStat").dataset.count = D.certs.length; hydrateIcons($("#featured")); },
-      initAnimationZones, // after everything it observes has been rendered
-      initSmoothScroll,
-      initReveals,
-      initNavSpy,
-      initScrollUI,
-      () => { bindTilt(); initMagnetic(); initCursor(); },
-    ];
-    for (const step of steps) {
-      step();
-      await yieldToMain();
-    }
-    pageBuilt();
-  })();
 })();

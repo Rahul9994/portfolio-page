@@ -2,23 +2,6 @@
    Rahul Penugonda — Portfolio
    ========================================================================== */
 
-/* ---------- Fonts (self-hosted variable woff2, subset to the site's characters) ---------- */
-@font-face {
-  font-family: "Space Grotesk";
-  src: url("../fonts/space-grotesk.woff2") format("woff2");
-  font-weight: 300 700; font-style: normal; font-display: swap;
-}
-@font-face {
-  font-family: "Inter";
-  src: url("../fonts/inter.woff2") format("woff2");
-  font-weight: 100 900; font-style: normal; font-display: swap;
-}
-@font-face {
-  font-family: "JetBrains Mono";
-  src: url("../fonts/jetbrains-mono.woff2") format("woff2");
-  font-weight: 400 800; font-style: normal; font-display: swap;
-}
-
 /* ---------- Tokens ---------- */
 :root {
   --bg: #05060f;
@@ -112,9 +95,7 @@ body {
   overflow-x: clip;
   transition: background-color 0.6s var(--ease), color 0.6s var(--ease);
 }
-/* the intro blocks scrolling on its own overlay (touch-action + wheel guard in JS)
-   instead of toggling body overflow, which would relayout the whole page when it ends */
-#boot { touch-action: none; overscroll-behavior: contain; }
+body.is-booting { overflow: hidden; }
 
 img { max-width: 100%; display: block; }
 a { color: inherit; text-decoration: none; }
@@ -355,32 +336,6 @@ kbd {
 }
 [data-theme="light"] .bg-vignette { background: radial-gradient(ellipse 120% 90% at 50% 40%, transparent 60%, rgba(120, 120, 200, 0.12)); }
 
-/* Lite background (phones): painted once, animated only with transform/opacity
-   so it runs entirely on the GPU compositor */
-.bg .lite-aurora {
-  position: absolute; inset: auto; left: 50%; top: 50%;
-  width: 125vmax; height: 125vmax; margin: -62.5vmax 0 0 -62.5vmax;
-  will-change: transform;
-}
-.lite-aurora.la { animation: liteAurA 26s ease-in-out infinite alternate; }
-.lite-aurora.lb { animation: liteAurB 34s ease-in-out infinite alternate; }
-@keyframes liteAurA {
-  from { transform: translate3d(-9%, -7%, 0) rotate(0deg) scale(1); }
-  to { transform: translate3d(8%, 6%, 0) rotate(38deg) scale(1.16); }
-}
-@keyframes liteAurB {
-  from { transform: translate3d(7%, 5%, 0) rotate(0deg) scale(1.12); }
-  to { transform: translate3d(-7%, -8%, 0) rotate(-34deg) scale(0.96); }
-}
-.bg .lite-stars {
-  position: absolute; inset: auto; left: 0; top: 0;
-  will-change: transform;
-  animation: liteStars 95s linear infinite;
-}
-.lite-stars.twinkle { animation: liteStars 95s linear infinite, liteTwinkle 2.8s ease-in-out infinite alternate; }
-@keyframes liteStars { to { transform: translate3d(0, -50%, 0); } }
-@keyframes liteTwinkle { from { opacity: 0.15; } to { opacity: 1; } }
-
 /* ---------- Cursor ---------- */
 .cursor-dot, .cursor-ring { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 998; opacity: 0; border-radius: 50%; }
 .cursor-dot { width: 6px; height: 6px; margin: -3px 0 0 -3px; background: var(--c1); box-shadow: 0 0 12px var(--c1); }
@@ -505,8 +460,8 @@ body.is-ready .nav { transform: translate(-50%, 0); }
 }
 .menu-toggle span:nth-child(1) { top: 16px; }
 .menu-toggle span:nth-child(2) { top: 24px; }
-.menu-toggle.is-open span:nth-child(1) { top: 20px; transform: rotate(45deg); }
-.menu-toggle.is-open span:nth-child(2) { top: 20px; transform: rotate(-45deg); }
+body.menu-open .menu-toggle span:nth-child(1) { top: 20px; transform: rotate(45deg); }
+body.menu-open .menu-toggle span:nth-child(2) { top: 20px; transform: rotate(-45deg); }
 
 .mobile-menu {
   position: fixed; inset: 0; z-index: 105;
@@ -515,15 +470,11 @@ body.is-ready .nav { transform: translate(-50%, 0); }
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   -webkit-backdrop-filter: blur(24px);
   backdrop-filter: blur(24px);
-  /* fade + scale from the menu button: transform/opacity only (GPU) */
-  opacity: 0; transform: scale(0.96); transform-origin: calc(100% - 44px) 44px;
-  transition: opacity 0.38s var(--ease), transform 0.5s var(--ease), visibility 0s linear 0.5s;
+  clip-path: circle(0% at calc(100% - 44px) 44px);
+  transition: clip-path 0.8s var(--ease-io);
   visibility: hidden;
 }
-.mobile-menu.is-open {
-  opacity: 1; transform: none; visibility: visible;
-  transition: opacity 0.38s var(--ease), transform 0.5s var(--ease), visibility 0s;
-}
+body.menu-open .mobile-menu { clip-path: circle(150% at calc(100% - 44px) 44px); visibility: visible; }
 .mobile-menu nav { display: flex; flex-direction: column; gap: 4px; }
 .mobile-menu nav a {
   display: flex; align-items: baseline; gap: 14px;
@@ -534,14 +485,14 @@ body.is-ready .nav { transform: translate(-50%, 0); }
 }
 .mobile-menu nav a i { font-style: normal; font-family: var(--font-mono); font-size: 13px; color: var(--c2); font-weight: 500; }
 .mobile-menu nav a:active { color: var(--c1); }
-.mobile-menu.is-open nav a { opacity: 1; transform: none; }
-.mobile-menu.is-open nav a:nth-child(1) { transition-delay: 0.075s; }
-.mobile-menu.is-open nav a:nth-child(2) { transition-delay: 0.110s; }
-.mobile-menu.is-open nav a:nth-child(3) { transition-delay: 0.145s; }
-.mobile-menu.is-open nav a:nth-child(4) { transition-delay: 0.180s; }
-.mobile-menu.is-open nav a:nth-child(5) { transition-delay: 0.215s; }
-.mobile-menu.is-open nav a:nth-child(6) { transition-delay: 0.250s; }
-.mobile-menu.is-open nav a:nth-child(7) { transition-delay: 0.285s; }
+body.menu-open .mobile-menu nav a { opacity: 1; transform: none; }
+body.menu-open .mobile-menu nav a:nth-child(1) { transition-delay: 0.15s; }
+body.menu-open .mobile-menu nav a:nth-child(2) { transition-delay: 0.2s; }
+body.menu-open .mobile-menu nav a:nth-child(3) { transition-delay: 0.25s; }
+body.menu-open .mobile-menu nav a:nth-child(4) { transition-delay: 0.3s; }
+body.menu-open .mobile-menu nav a:nth-child(5) { transition-delay: 0.35s; }
+body.menu-open .mobile-menu nav a:nth-child(6) { transition-delay: 0.4s; }
+body.menu-open .mobile-menu nav a:nth-child(7) { transition-delay: 0.45s; }
 .mobile-social { display: flex; gap: 10px; margin-top: 36px; }
 
 /* ---------- Side rails ---------- */
@@ -685,11 +636,9 @@ body.is-ready .social-rail, body.is-ready .email-rail { opacity: 1; transform: n
   font-size: clamp(20px, 2.6vw, 28px);
   font-weight: 500;
   color: var(--muted);
-  height: 1.45em;
-  contain: strict; /* typing never triggers layout outside this box */
+  min-height: 1.4em;
   margin-bottom: 18px;
 }
-@media (max-width: 720px) { .hero-role { height: 2.9em; } }
 .rotator { color: var(--text); font-weight: 600; }
 .caret {
   display: inline-block; width: 3px; height: 1em; margin-left: 4px;
@@ -710,7 +659,7 @@ body.is-ready .social-rail, body.is-ready .email-rail { opacity: 1; transform: n
 }
 .hero-stats > div { padding: 0 26px; border-left: 1px solid var(--border); }
 .hero-stats > div:first-child { padding-left: 0; border-left: 0; }
-.hero-stats dt { font-variant-numeric: tabular-nums; font-family: var(--font-display); font-size: clamp(26px, 3vw, 36px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
+.hero-stats dt { font-family: var(--font-display); font-size: clamp(26px, 3vw, 36px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
 .hero-stats dd { margin: 4px 0 0; font-size: 13px; color: var(--dim); }
 
 /* hero intro animation */
@@ -794,8 +743,8 @@ body.is-ready [data-hero="7"] { transition-delay: 0.66s; }
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   white-space: nowrap;
-  translate: -50% -50%;
-  rotate: 12deg; /* cancels the ring tilt so cards stay level */
+  will-change: transform, opacity;
+  z-index: 4;
 }
 .orbiter::before {
   content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px;
@@ -828,49 +777,11 @@ body.is-ready [data-hero="7"] { transition-delay: 0.66s; }
   position: absolute; left: 0; top: 0;
   width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%;
   background: var(--c1); box-shadow: 0 0 12px 2px var(--c1);
+  will-change: transform, opacity;
 }
 .satellite.s2 { background: var(--c3); box-shadow: 0 0 12px 2px var(--c3); width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; }
 .satellite.s3 { background: var(--c4); box-shadow: 0 0 10px 2px var(--c4); width: 4px; height: 4px; margin: -2px 0 0 -2px; }
 @keyframes bob { 50% { transform: translateY(-10px); } }
-
-/* Orbit motion — pure CSS on the compositor.
-   .orb (z-index front/back) > .orb-tilt (ring tilt) > .orb-x (cos) > .orb-y (sin + depth)
-   Phase 0 = right side, 25% = front/bottom, 50% = left, 75% = back/top (behind photo). */
-.portrait { container-type: inline-size; }
-.orb {
-  position: absolute; left: 50%; top: 55%; width: 0; height: 0; z-index: 1;
-  --delay: calc(var(--phase, 0) * var(--dur, 18s) * -1);
-  animation: orbZ var(--dur, 18s) step-end infinite var(--delay);
-}
-.orb.sat { animation-name: orbZsat; }
-.orb-tilt { rotate: -12deg; }
-.orb-x { animation: orbX var(--dur, 18s) cubic-bezier(0.37, 0, 0.63, 1) infinite var(--delay); }
-.orb-y { animation: orbY var(--dur, 18s) linear infinite var(--delay); }
-.orb.sat .orb-y { animation-name: orbYsat; }
-@keyframes orbZ { 0% { z-index: 4; } 50% { z-index: 1; } }
-@keyframes orbZsat { 0% { z-index: 3; } 50% { z-index: 1; } }
-@keyframes orbX { 0%, 100% { translate: 52cqw 0; } 50% { translate: -52cqw 0; } }
-@keyframes orbY {
-  0%   { translate: 0 0;      scale: 0.87; opacity: 0.725; animation-timing-function: cubic-bezier(0.61, 1, 0.88, 1); }
-  25%  { translate: 0 25cqw;  scale: 1;    opacity: 1;     animation-timing-function: cubic-bezier(0.12, 0, 0.39, 0); }
-  50%  { translate: 0 0;      scale: 0.87; opacity: 0.725; animation-timing-function: cubic-bezier(0.61, 1, 0.88, 1); }
-  75%  { translate: 0 -25cqw; scale: 0.74; opacity: 0.45;  animation-timing-function: cubic-bezier(0.12, 0, 0.39, 0); }
-  100% { translate: 0 0;      scale: 0.87; opacity: 0.725; }
-}
-@keyframes orbYsat {
-  0%   { translate: 0 0;      scale: 0.75; opacity: 0.725; animation-timing-function: cubic-bezier(0.61, 1, 0.88, 1); }
-  25%  { translate: 0 25cqw;  scale: 1;    opacity: 1;     animation-timing-function: cubic-bezier(0.12, 0, 0.39, 0); }
-  50%  { translate: 0 0;      scale: 0.75; opacity: 0.725; animation-timing-function: cubic-bezier(0.61, 1, 0.88, 1); }
-  75%  { translate: 0 -25cqw; scale: 0.5;  opacity: 0.45;  animation-timing-function: cubic-bezier(0.12, 0, 0.39, 0); }
-  100% { translate: 0 0;      scale: 0.75; opacity: 0.725; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .orb, .orb-x, .orb-y { animation: none !important; }
-  .orb { z-index: 4; }
-  .orb[data-n="0"] .orb-x { translate: -42cqw 6cqw; }
-  .orb[data-n="1"] .orb-x { translate: 42cqw 6cqw; }
-  .orb.sat { display: none; }
-}
 
 .scroll-cue {
   position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
@@ -1059,10 +970,10 @@ body.is-ready .scroll-cue { opacity: 1; }
   border: 1px solid var(--border-strong);
   box-shadow: var(--shadow);
   background: var(--surface-solid);
-  opacity: 0; transform: translateY(56px) scale(0.94);
-  transition: opacity 0.9s var(--ease), transform 1.3s var(--ease);
+  clip-path: inset(0 0 100% 0 round var(--r-lg));
+  transition: clip-path 1.4s var(--ease-io);
 }
-.feat.is-in .feat-media-inner { opacity: 1; transform: none; }
+.feat.is-in .feat-media-inner { clip-path: inset(0 0 0 0 round var(--r-lg)); }
 .feat-media img { width: 100%; height: 100%; object-fit: cover; object-position: top center; transform: scale(1.25); transition: transform 1.8s var(--ease); }
 .feat.is-in .feat-media img { transform: scale(1.02); }
 .feat-media:hover img { transform: scale(1.06); }
@@ -1146,8 +1057,7 @@ body.is-ready .scroll-cue { opacity: 1; }
   animation: hover 3s ease-in-out infinite;
 }
 @keyframes hover { 50% { transform: translateY(-8px); } }
-/* static motion-blurred blades: animating an SVG transform forces a layout every frame */
-.vis-drone .rotor { opacity: 0.75; stroke-dasharray: 3 2; }
+.vis-drone .rotor { transform-box: fill-box; transform-origin: center; animation: spin 0.25s linear infinite; }
 .hud {
   position: absolute; font-family: var(--font-mono); font-size: 11px; color: #a7f3d0;
   padding: 6px 10px; border-radius: 8px;
@@ -1576,7 +1486,7 @@ body.is-ready .scroll-cue { opacity: 1; }
   .menu-toggle span { left: 11px; right: 11px; }
   .menu-toggle span:nth-child(1) { top: 15px; }
   .menu-toggle span:nth-child(2) { top: 23px; }
-  .menu-toggle.is-open span:nth-child(1), .menu-toggle.is-open span:nth-child(2) { top: 19px; }
+  body.menu-open .menu-toggle span:nth-child(1), body.menu-open .menu-toggle span:nth-child(2) { top: 19px; }
 
   .hero { padding-top: calc(var(--nav-h) + 30px); padding-bottom: 70px; }
   .portrait { width: min(250px, 62vw); }
@@ -1647,16 +1557,13 @@ body.is-ready .scroll-cue { opacity: 1; }
 }
 
 /* ==========================================================================
-   TITLE SEQUENCE — scroll-scrubbed motion graphic
-   Two engines, one look:
-   • .mg.sda  — CSS scroll-driven animations (Chrome/Edge 115+, Safari 26+).
-                Runs on the compositor, locked to the finger, zero JS per frame.
-   • fallback — initTitleSequence() writes the same poses from JS.
-   The stage is always a "dark room" so it reads the same in both themes.
+   TITLE SEQUENCE — scroll-scrubbed motion graphic (driven by initTitleSequence)
+   The stage is always "dark room" so it reads the same in both themes.
    ========================================================================== */
 .mg {
   position: relative;
-  height: 280vh;
+  height: 340vh;
+  margin-bottom: -60vh; /* the next section rises in over the sequence's final beat */
   --mg-c1: #22d3ee; --mg-c2: #8b5cf6; --mg-c3: #f472b6; --mg-c4: #fbbf24;
   --mg-ink: #03040b;
 }
@@ -1667,11 +1574,9 @@ body.is-ready .scroll-cue { opacity: 1; }
   display: grid; place-items: center;
   color: #fff;
   contain: layout paint;
-  --gap: 80px;
 }
-.mg-dim { position: absolute; inset: 0; opacity: 0; }
-.mg-dim-bg {
-  position: absolute; inset: 0;
+.mg-dim {
+  position: absolute; inset: 0; opacity: 0;
   background: radial-gradient(120% 85% at 50% 42%, #0d0f2b 0%, var(--mg-ink) 68%);
 }
 .mg-floor {
@@ -1683,16 +1588,12 @@ body.is-ready .scroll-cue { opacity: 1; }
 }
 .mg-floor span {
   position: absolute; left: 0; right: 0; top: -120%; bottom: 0;
-  transform-origin: 50% 100%;
-  transform: rotateX(74deg);
-  overflow: hidden;
-}
-.mg-floor i {
-  position: absolute; left: 0; right: 0; top: -64px; bottom: 0;
   background-image:
     linear-gradient(rgba(139, 92, 246, 0.55) 1px, transparent 1px),
     linear-gradient(90deg, rgba(34, 211, 238, 0.4) 1px, transparent 1px);
   background-size: 64px 64px;
+  transform-origin: 50% 100%;
+  transform: rotateX(74deg);
 }
 .mg-glow {
   position: absolute; left: 50%; top: 46%; width: min(1100px, 120vw); aspect-ratio: 2.2;
@@ -1707,9 +1608,7 @@ body.is-ready .scroll-cue { opacity: 1; }
   background: linear-gradient(90deg, transparent, #e0f7ff 18%, #fff 50%, #e0f7ff 82%, transparent);
   box-shadow: 0 0 14px rgba(165, 243, 252, 0.9), 0 0 38px rgba(139, 92, 246, 0.75);
   transform: scaleX(0); opacity: 0; z-index: 1;
-  --dir: -1;
 }
-.mg-bar + .mg-bar { --dir: 1; }
 
 .mg-hud {
   position: absolute; inset: clamp(14px, 3.4vw, 40px);
@@ -1725,8 +1624,8 @@ body.is-ready .scroll-cue { opacity: 1; }
 .mg-label { position: absolute; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
 .mg-label.tl { top: 4px; left: 34px; }
 .mg-label.tr { top: 4px; right: 34px; }
-.mg-label.bl { bottom: 4px; left: 34px; color: #fff; font-variant-numeric: tabular-nums; }
-.mg-label.br { bottom: 4px; right: 34px; font-variant-numeric: tabular-nums; }
+.mg-label.bl { bottom: 4px; left: 34px; color: #fff; }
+.mg-label.br { bottom: 4px; right: 34px; }
 .mg-rec { width: 7px; height: 7px; border-radius: 50%; background: #f43f5e; box-shadow: 0 0 10px #f43f5e; }
 .mg-progress { position: absolute; left: 34px; right: 34px; bottom: 30px; height: 1px; background: rgba(255, 255, 255, 0.12); }
 .mg-progress span { position: absolute; inset: 0; background: linear-gradient(90deg, var(--mg-c1), var(--mg-c2), var(--mg-c3)); transform-origin: left; transform: scaleX(0); }
@@ -1750,14 +1649,10 @@ body.is-ready .scroll-cue { opacity: 1; }
 .mg-l1 .mg-ch { color: #fff; }
 .mg-l2 .mg-ch { color: transparent; -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.9); }
 .mg-layer { position: absolute; inset: 0; padding: inherit; pointer-events: none; }
-/* gradient wipe = a moving window (wrap) with counter-moving text inside:
-   two transforms, so it stays on the compositor (no clip-path repaint) */
-.mg-fillwrap { overflow: hidden; translate: -100% 0; padding: 0; }
 .mg-fill {
-  display: block; padding: 0.05em 0.08em;
-  translate: 100% 0;
   background: linear-gradient(100deg, var(--mg-c1), var(--mg-c2) 38%, var(--mg-c3) 70%, var(--mg-c4));
   -webkit-background-clip: text; background-clip: text; color: transparent;
+  clip-path: inset(-20% 100% -20% 0);
 }
 .mg-sheen {
   background: linear-gradient(105deg, transparent 44%, rgba(255, 255, 255, 0.95) 50%, transparent 56%);
@@ -1780,98 +1675,21 @@ body.is-ready .scroll-cue { opacity: 1; }
   position: absolute; left: 50%; bottom: 11%; transform: translateX(-50%); z-index: 2;
   display: flex; flex-direction: column; align-items: center; gap: 12px;
   font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.32em; color: #b9c0e6;
+  opacity: 0;
 }
 .mg-hint i { width: 1px; height: 40px; background: linear-gradient(#fff, transparent); transform-origin: top; animation: mgHint 1.6s var(--ease) infinite; }
 @keyframes mgHint { 0% { transform: scaleY(0); } 60% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
 
+/* reduced motion: a still, composed title card instead of a pinned sequence */
+.mg.is-static { height: auto; margin-bottom: 0; }
 /* keep the frame clean while the sequence is pinned */
 .social-rail, .email-rail { transition: opacity 0.5s var(--ease), transform 1s 0.6s var(--ease); }
-.social-rail.is-muted, .email-rail.is-muted { opacity: 0 !important; pointer-events: none; }
-
-/* reduced motion: a still, composed title card instead of a pinned sequence */
-.mg.is-static { height: auto; }
+body.mg-active .social-rail, body.mg-active .email-rail { opacity: 0 !important; pointer-events: none; }
 .mg.is-static .mg-stage { position: relative; height: 80vh; }
 .mg.is-static .mg-hint { display: none; }
 
-/* ---------- scroll-driven engine ----------
-   Ranges are "contain X%" of the section = timeline progress X (0–100). */
-@keyframes mgIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes mgOut { from { opacity: 1; } to { opacity: 0; } }
-@keyframes mgHud { 0% { opacity: 0; } 9.41% { opacity: 1; } 88.24% { opacity: 1; } 100% { opacity: 0; } }
-@keyframes mgFloor { 0% { opacity: 0; } 16.28% { opacity: 1; } 88.37% { opacity: 1; } 100% { opacity: 0; } }
-@keyframes mgGlow { 0% { opacity: 0; } 34.67% { opacity: 1; } 82.67% { opacity: 1; } 100% { opacity: 0; } }
-@keyframes mgGrid { from { translate: 0 0; } to { translate: 0 64px; } }
-@keyframes mgProg { from { scale: 0 1; } to { scale: 1 1; } }
-@keyframes mgBarScale {
-  0% { scale: 0 1; animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
-  48.15% { scale: 1 1; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
-  100% { scale: 0.7 1; }
-}
-@keyframes mgBarMove { from { translate: 0 0; } to { translate: 0 calc(var(--gap) * var(--dir)); } }
-@keyframes mgBarFade { 0% { opacity: 0; } 0.6% { opacity: 1; } 88.24% { opacity: 1; } 100% { opacity: 0; } }
-@keyframes mgL1 {
-  from { opacity: 0; translate: calc((var(--i) - 2) * 0.3em) 1.05em; rotate: x -78deg; filter: blur(14px); }
-  to { opacity: 1; translate: 0 0; rotate: x 0deg; filter: blur(0); }
-}
-@keyframes mgL1Lite {
-  from { opacity: 0; translate: calc((var(--i) - 2) * 0.3em) 1.05em; rotate: x -78deg; }
-  to { opacity: 1; translate: 0 0; rotate: x 0deg; }
-}
-@keyframes mgL2 {
-  from { opacity: 0; translate: 0 -0.2em; scale: 1.9; filter: blur(14px); }
-  to { opacity: 1; translate: 0 0; scale: 1; filter: blur(0); }
-}
-@keyframes mgL2Lite {
-  from { opacity: 0; translate: 0 -0.2em; scale: 1.9; }
-  to { opacity: 1; translate: 0 0; scale: 1; }
-}
-@keyframes mgWipeWin { from { translate: -100% 0; } to { translate: 0 0; } }
-@keyframes mgWipeTxt { from { translate: 100% 0; } to { translate: 0 0; } }
-@keyframes mgSheen { from { background-position: 100% 0; } to { background-position: 0% 0; } }
-@keyframes mgZoom { from { scale: 1; } to { scale: 65; } }
-
-@supports (animation-timeline: view()) {
-  .mg.sda { view-timeline: --mg block; }
-  .mg.sda .mg-dim { animation: mgIn linear both; animation-timeline: --mg; animation-range: entry 70% contain 4%; }
-  .mg.sda .mg-dim-bg { animation: mgOut linear both; animation-timeline: --mg; animation-range: contain 90% contain 100%; }
-  .mg.sda .mg-hint { animation: mgOut linear both; animation-timeline: --mg; animation-range: contain 1.5% contain 6%; }
-  .mg.sda .mg-hud { animation: mgHud linear both; animation-timeline: --mg; animation-range: contain 3% contain 88%; }
-  .mg.sda .mg-floor { animation: mgFloor linear both; animation-timeline: --mg; animation-range: contain 2% contain 88%; }
-  .mg.sda .mg-floor i { animation: mgGrid linear both 40; animation-timeline: --mg; animation-range: contain 0% contain 100%; }
-  .mg.sda .mg-glow { animation: mgGlow linear both; animation-timeline: --mg; animation-range: contain 20% contain 95%; }
-  .mg.sda .mg-progress span { transform: none; animation: mgProg linear both; animation-timeline: --mg; animation-range: contain 0% contain 100%; }
-  .mg.sda .mg-bar {
-    transform: none;
-    animation: mgBarScale linear both, mgBarMove cubic-bezier(0.65, 0, 0.35, 1) both, mgBarFade linear both;
-    animation-timeline: --mg, --mg, --mg;
-    animation-range: contain 3% contain 30%, contain 16% contain 30%, contain 3% contain 88%;
-  }
-  .mg.sda .mg-l1 .mg-ch {
-    animation: mgL1 cubic-bezier(0.33, 1, 0.68, 1) both;
-    animation-timeline: --mg;
-    animation-range: contain calc(10% + var(--i) * 3%) contain calc(26% + var(--i) * 3%);
-  }
-  .mg.sda .mg-l2 .mg-ch {
-    animation: mgL2 cubic-bezier(0.33, 1, 0.68, 1) both;
-    animation-timeline: --mg;
-    animation-range: contain calc(22% + var(--i) * 1.6%) contain calc(38% + var(--i) * 1.6%);
-  }
-  [data-perf="lite"] .mg.sda .mg-l1 .mg-ch { animation-name: mgL1Lite; }
-  [data-perf="lite"] .mg.sda .mg-l2 .mg-ch { animation-name: mgL2Lite; }
-  .mg.sda .mg-fillwrap { animation: mgWipeWin cubic-bezier(0.65, 0, 0.35, 1) both; animation-timeline: --mg; animation-range: contain 40% contain 56%; }
-  .mg.sda .mg-fill { animation: mgWipeTxt cubic-bezier(0.65, 0, 0.35, 1) both; animation-timeline: --mg; animation-range: contain 40% contain 56%; }
-  .mg.sda .mg-sheen { opacity: 1; animation: mgSheen linear both; animation-timeline: --mg; animation-range: contain 56% contain 70%; }
-  .mg.sda .mg-tags { animation: mgOut linear both; animation-timeline: --mg; animation-range: contain 78% contain 88%; }
-  .mg.sda .mg-tags span { animation: mgIn linear both; animation-timeline: --mg; animation-range: contain calc(54% + var(--i) * 3%) contain calc(58.5% + var(--i) * 3%); }
-  .mg.sda .mg-name {
-    animation: mgZoom cubic-bezier(0.32, 0, 0.67, 0) both, mgOut linear both;
-    animation-timeline: --mg, --mg;
-    animation-range: contain 80% contain 100%, contain 95% contain 100%;
-  }
-}
-
 @media (max-width: 720px) {
-  .mg { height: 230vh; }
+  .mg { height: 290vh; }
   .mg-hud { font-size: 9px; letter-spacing: 0.12em; }
   .mg-label.tl, .mg-label.bl { left: 28px; }
   .mg-label.tr, .mg-label.br { right: 28px; }
@@ -1925,57 +1743,12 @@ body.is-ready .scroll-cue { opacity: 1; }
 [data-perf="lite"] .contact-glow { filter: blur(40px); opacity: 0.45; }
 [data-perf="lite"] .feat-media::before { filter: blur(30px); }
 [data-perf="lite"] .marquee { -webkit-mask-image: none; mask-image: none; }
-[data-perf="lite"] #boot.is-leaving .boot-core { filter: none; }
-[data-perf="lite"] .boot-mono, [data-perf="lite"] .ring-progress { filter: none; }
-
-/* ---------- Off-screen animation zones ----------
-   Looping CSS animations cost a style recalc every frame even when off-screen.
-   initAnimationZones() tags zones that leave the viewport; their descendants pause. */
-.anim-off *, .anim-off *::before, .anim-off *::after { animation-play-state: paused !important; }
-
-/* ---------- Touch polish ---------- */
-html { -webkit-tap-highlight-color: transparent; }
-a, button, label, [role="tab"], .cert, .badge { touch-action: manipulation; }
-/* hover lifts "stick" after a tap on touchscreens — swap them for instant press feedback */
-@media (hover: none) {
-  .t-card:hover, .skill-card:hover, .badge:hover, .cert:hover, .gh-card:hover, .c-link:hover,
-  .interest-cloud span:hover, .to-top:hover, .icon-btn:hover, .theme-toggle:hover { transform: none; box-shadow: none; }
-  .repo:hover .repo-cover img, .feat-media:hover img, .cert:hover .cert-thumb img, .badge:hover .badge-img img { transform: none; }
-  .badge:hover .badge-shine { transform: translateX(-120%); }
-  .btn-glow:hover::after { opacity: 0; }
-  .btn:active, .icon-btn:active, .chip-btn:active, .cert:active, .badge:active, .c-link:active,
-  .repo-links a:active, .theme-toggle:active, .menu-toggle:active, .to-top:active {
-    transform: scale(0.96); transition: transform 0.08s ease-out;
-  }
-}
-
-/* theme switch: suspend every colour transition for one frame, so the swap
-   is a single restyle instead of hundreds of simultaneous transitions */
-html.theme-switching *, html.theme-switching *::before, html.theme-switching *::after { transition: none !important; }
-
-/* ---------- Scroll-driven UI (compositor) ---------- */
-@keyframes sdaProgress { from { scale: 0 1; } to { scale: 1 1; } }
-@keyframes sdaHeroCopy { from { translate: 0 0; opacity: 1; } 90.9% { opacity: 0; } to { translate: 0 12vh; opacity: 0; } }
-@keyframes sdaPortrait { from { translate: 0 0; scale: 1; } to { translate: 0 22vh; scale: 0.92; } }
-@keyframes sdaLine { from { scale: 1 0; } to { scale: 1 1; } }
-@supports (animation-timeline: scroll()) {
-  .sda-ui .scroll-progress span { transform: none; animation: sdaProgress linear both; animation-timeline: scroll(root block); }
-  .sda-ui .hero-copy { animation: sdaHeroCopy linear both; animation-timeline: scroll(root block); animation-range: 0 100vh; }
-  .sda-ui .portrait { animation: sdaPortrait linear both; animation-timeline: scroll(root block); animation-range: 0 100vh; }
-  /* the line's own box is overflow:hidden (a scroll container), so it follows
-     a named view timeline on the column instead */
-  .sda-ui .timeline { view-timeline: --tl block; }
-  .sda-ui .timeline-line span {
-    transform: none; animation: sdaLine linear both; animation-timeline: --tl;
-    animation-range: cover 35vh cover calc(100% - 65vh);
-  }
-}
 
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
   [data-reveal], [data-hero], .feat-body > *, [data-split] .w > span { opacity: 1 !important; transform: none !important; }
-  .feat-media-inner { opacity: 1 !important; transform: none !important; }
+  .feat-media-inner { clip-path: none !important; }
 }
 
 /* Grids wait until scrolled into view before their cards cascade in */

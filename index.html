@@ -34,10 +34,9 @@
     })();
   </script>
 
-  <!-- self-hosted, subsetted variable fonts (no render-blocking third-party request) -->
-  <link rel="preload" href="assets/fonts/space-grotesk.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="assets/fonts/jetbrains-mono.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="preload" as="image" href="assets/img/profile.webp" />
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
@@ -220,12 +219,8 @@
     <!-- ===================== TITLE SEQUENCE (scroll-scrubbed motion graphic) ===================== -->
     <section class="mg" id="sequence" aria-label="Title sequence: Rahul Penugonda">
       <div class="mg-stage">
-        <!-- outer fades the lights down as the section arrives; inner brings them back up at the end -->
-        <div class="mg-dim" aria-hidden="true">
-          <i class="mg-dim-bg"></i>
-          <div class="mg-hint"><span>SCROLL TO PLAY</span><i></i></div>
-        </div>
-        <div class="mg-floor" aria-hidden="true"><span><i></i></span></div>
+        <div class="mg-dim"></div>
+        <div class="mg-floor" aria-hidden="true"><span></span></div>
         <div class="mg-glow" aria-hidden="true"></div>
         <canvas class="mg-particles" aria-hidden="true"></canvas>
         <div class="mg-bar" aria-hidden="true"></div>
@@ -247,13 +242,14 @@
             <div class="mg-line mg-l2" data-text="PENUGONDA"></div>
           </div>
           <div class="mg-tags" aria-hidden="true">
-            <span data-text="AI ENGINEER" style="--i:0"></span>
-            <span data-text="COMPUTER VISION" style="--i:1"></span>
-            <span data-text="CYBERSECURITY" style="--i:2"></span>
-            <span data-text="EMBEDDED SYSTEMS" style="--i:3"></span>
+            <span data-text="AI ENGINEER"></span>
+            <span data-text="COMPUTER VISION"></span>
+            <span data-text="CYBERSECURITY"></span>
+            <span data-text="EMBEDDED SYSTEMS"></span>
           </div>
         </div>
 
+        <div class="mg-hint" aria-hidden="true"><span>SCROLL TO PLAY</span><i></i></div>
       </div>
     </section>
 
@@ -575,6 +571,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js" defer></script>
   <script src="assets/js/data.js" defer></script>
   <script src="assets/js/main.js" defer></script>
 </body>
