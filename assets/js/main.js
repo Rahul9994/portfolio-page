@@ -671,6 +671,242 @@
   }
 
   /* ------------------------------------------------------------------------
+     Title sequence: a pinned, scroll-scrubbed motion graphic of the name.
+     Paced like a 5-second, 24fps title card (120 "frames" of scroll).
+     Every frame is a pure function of progress p (0–1), so scrolling back
+     rewinds it exactly — sparks included.
+     ------------------------------------------------------------------------ */
+  function initTitleSequence() {
+    const sec = $("#sequence");
+    if (!sec) return;
+    const stage = $(".mg-stage", sec);
+    const dim = $(".mg-dim", sec);
+    const floor = $(".mg-floor", sec);
+    const plane = $(".mg-floor span", sec);
+    const glow = $(".mg-glow", sec);
+    const hud = $(".mg-hud", sec);
+    const tc = $(".mg-tc", sec);
+    const fc = $(".mg-fc", sec);
+    const prog = $(".mg-progress span", sec);
+    const bars = $$(".mg-bar", sec);
+    const hint = $(".mg-hint", sec);
+    const name = $(".mg-name", sec);
+    const tags = $$(".mg-tags span", sec);
+    const canvas = $(".mg-particles", sec);
+    const ctx = canvas.getContext("2d");
+
+    // Letters are inline-block spans (so each can move); the fill and sheen
+    // overlays are plain text with kerning off, so they line up exactly.
+    const build = (line, withFill) => {
+      const text = line.dataset.text;
+      line.innerHTML = [...text].map((c) => `<span class="mg-ch">${c}</span>`).join("") +
+        (withFill ? `<span class="mg-layer mg-fill">${text}</span>` : "") +
+        `<span class="mg-layer mg-sheen">${text}</span>`;
+      return $$(".mg-ch", line);
+    };
+    const l1 = $(".mg-l1", sec), l2 = $(".mg-l2", sec);
+    const L1 = build(l1, false), L2 = build(l2, true);
+    const fill = $(".mg-fill", l2);
+    const sheens = $$(".mg-sheen", sec);
+    const tagWords = tags.map((t) => t.dataset.text);
+    const tagShown = tags.map(() => null);
+
+    const seg = (p, a, b) => clamp((p - a) / (b - a), 0, 1);
+    const out3 = (t) => 1 - Math.pow(1 - t, 3);
+    const in3 = (t) => t * t * t;
+    const io3 = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const rnd = (k) => { const x = Math.sin(k * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+    const pad = (n, l = 2) => String(n).padStart(l, "0");
+    const GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&*/<>";
+    const BLUR = !LITE;
+    const SPARKS = LITE ? 60 : 150;
+    const SPARK_COLORS = ["165,243,252", "196,181,253", "249,168,212", "253,230,138"];
+
+    // geometry, measured without transforms (offset*), so it is stable mid-zoom
+    let geo = null;
+    let sparksDrawn = false;
+    function measure() {
+      const fs = parseFloat(getComputedStyle(name).fontSize);
+      // zoom pivot = optical centre of the "O" in PENUGONDA
+      const O = L2[5];
+      const c = document.createElement("canvas").getContext("2d");
+      c.font = `700 ${fs}px "Space Grotesk"`;
+      const m = c.measureText("O");
+      const fA = m.fontBoundingBoxAscent || fs * 0.98;
+      const fD = m.fontBoundingBoxDescent || fs * 0.3;
+      const glyphMid = (O.offsetHeight - (fA + fD)) / 2 + fA - (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+      const ox = l2.offsetLeft + O.offsetLeft + O.offsetWidth / 2;
+      const oy = l2.offsetTop + O.offsetTop + glyphMid;
+      name.style.transformOrigin = `${ox.toFixed(1)}px ${oy.toFixed(1)}px`;
+
+      const center = name.parentElement;
+      geo = {
+        fs,
+        nx: center.offsetLeft + name.offsetLeft,
+        ny: center.offsetTop + name.offsetTop,
+        nw: name.offsetWidth,
+        nh: name.offsetHeight,
+        W: stage.clientWidth,
+        H: stage.clientHeight,
+      };
+      bars.forEach((b) => (b.style.top = `${(geo.ny + geo.nh / 2).toFixed(1)}px`));
+      const dpr = LITE ? 1 : Math.min(devicePixelRatio || 1, 2);
+      canvas.width = Math.round(geo.W * dpr);
+      canvas.height = Math.round(geo.H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      sparksDrawn = true; // force a clear on the next draw
+    }
+
+    function letter(el, t, transform) {
+      if (el._t === t) return;
+      el._t = t;
+      el.style.opacity = t.toFixed(3);
+      el.style.transform = t >= 1 ? "" : transform;
+      el.style.filter = BLUR && t > 0 && t < 1 ? `blur(${((1 - t) * 14).toFixed(1)}px)` : "";
+    }
+    const setText = (el, val) => { if (el._v !== val) { el._v = val; el.textContent = val; } };
+
+    function sparks(p) {
+      const active = p > 0.55 && p < 0.92;
+      if (!active) {
+        if (sparksDrawn) { ctx.clearRect(0, 0, geo.W, geo.H); sparksDrawn = false; }
+        return;
+      }
+      ctx.clearRect(0, 0, geo.W, geo.H);
+      sparksDrawn = true;
+      for (let k = 0; k < SPARKS; k++) {
+        const r1 = rnd(k + 1), r2 = rnd(k + 77), r3 = rnd(k + 151), r4 = rnd(k + 233), r5 = rnd(k + 307);
+        // each spark is born where the light sweep passes over the name
+        const born = 0.56 + r1 * 0.13 + r3 * 0.03;
+        const t = seg(p, born, born + 0.17 + r5 * 0.08);
+        if (t <= 0 || t >= 1) continue;
+        const ox = geo.nx + r1 * geo.nw;
+        const oy = geo.ny + geo.nh * (0.2 + r2 * 0.6);
+        const ang = r4 * Math.PI * 2;
+        const dist = out3(t) * (24 + r5 * geo.fs * 1.4);
+        const x = ox + Math.cos(ang) * dist;
+        const y = oy + Math.sin(ang) * dist * 0.55 - t * geo.fs * 0.2;
+        ctx.fillStyle = `rgba(${SPARK_COLORS[k % 4]},${((1 - t) * (0.45 + 0.55 * r2)).toFixed(3)})`;
+        ctx.beginPath();
+        ctx.arc(x, y, 0.6 + r5 * 1.9, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function render(raw) {
+      if (!geo) measure();
+      const p = clamp(raw, 0, 1);
+
+      // lights dim as the section arrives, and come back up on the way out
+      const lightsOn = seg(raw, -0.14, 0.04);
+      const lightsOff = seg(p, 0.9, 1);
+      dim.style.opacity = (lightsOn * (1 - lightsOff)).toFixed(3);
+      hint.style.opacity = (lightsOn * (1 - seg(p, 0.015, 0.06))).toFixed(3);
+
+      const outro = 1 - seg(p, 0.78, 0.88);
+      hud.style.opacity = (seg(p, 0.03, 0.11) * outro).toFixed(3);
+      floor.style.opacity = (seg(p, 0.02, 0.16) * outro).toFixed(3);
+      plane.style.transform = `rotateX(74deg) translate3d(0, ${((p * 2560) % 64).toFixed(1)}px, 0)`;
+      glow.style.opacity = (seg(p, 0.2, 0.46) * (1 - seg(p, 0.82, 0.95))).toFixed(3);
+
+      // timecode: 5 s @ 24 fps
+      const f = Math.round(p * 120);
+      setText(tc, `00:00:0${Math.floor(f / 24)}:${pad(f % 24)}`);
+      setText(fc, `FRAME ${pad(f, 3)} / 120`);
+      prog.style.transform = `scaleX(${p.toFixed(4)})`;
+
+      // light streak draws, then splits into two frame bars around the name
+      const streak = out3(seg(p, 0.03, 0.16));
+      const split = io3(seg(p, 0.16, 0.3));
+      const gap = geo.nh / 2 + geo.fs * 0.14;
+      bars.forEach((b, i) => {
+        b.style.opacity = streak > 0 ? outro.toFixed(3) : "0";
+        b.style.transform = `translate3d(0, ${((i ? 1 : -1) * gap * split).toFixed(1)}px, 0) scaleX(${(streak * (1 - 0.3 * split)).toFixed(4)})`;
+      });
+
+      // RAHUL — letters flip up out of a mask while the tracking closes in
+      L1.forEach((el, i) => {
+        const t = out3(seg(p, 0.1 + i * 0.03, 0.26 + i * 0.03));
+        letter(el, t, `translate3d(${((i - 2) * 0.3 * (1 - t)).toFixed(3)}em, ${(1.05 * (1 - t)).toFixed(3)}em, 0) rotateX(${(-78 * (1 - t)).toFixed(1)}deg)`);
+      });
+      // PENUGONDA — outlined letters zoom down into place…
+      L2.forEach((el, i) => {
+        const t = out3(seg(p, 0.22 + i * 0.016, 0.38 + i * 0.016));
+        letter(el, t, `translate3d(0, ${(-0.2 * (1 - t)).toFixed(3)}em, 0) scale(${(1.9 - 0.9 * t).toFixed(3)})`);
+      });
+      // …then the gradient wipes in
+      const fp = io3(seg(p, 0.4, 0.56));
+      fill.style.clipPath = `inset(-20% ${((1 - fp) * 100).toFixed(2)}% -20% 0)`;
+
+      // specular sweep across both lines
+      const sh = seg(p, 0.56, 0.7);
+      sheens.forEach((el) => {
+        el.style.opacity = sh > 0 && sh < 1 ? "1" : "0";
+        el.style.backgroundPosition = `${(100 - sh * 100).toFixed(1)}% 0`;
+      });
+
+      // title tags decode in
+      const tick = Math.floor(p * 180);
+      tags.forEach((el, i) => {
+        const a = 0.54 + i * 0.03;
+        const t = seg(p, a, a + 0.1);
+        el.style.opacity = (Math.min(1, t * 2.2) * outro).toFixed(3);
+        const w = tagWords[i];
+        const n = Math.floor(t * w.length);
+        let out = "";
+        for (let k = 0; k < w.length; k++) {
+          out += k < n || w[k] === " " ? w[k] : GLYPHS[(rnd(k * 13 + i * 101 + tick) * GLYPHS.length) | 0];
+        }
+        if (tagShown[i] !== out) { tagShown[i] = out; el.textContent = out; }
+      });
+
+      // camera flies through the "O" into the next section
+      const z = in3(seg(p, 0.8, 1));
+      name.style.transform = z > 0 ? `scale(${(1 + z * 64).toFixed(3)})` : "";
+      name.style.opacity = (1 - seg(p, 0.95, 1)).toFixed(3);
+
+      sparks(p);
+    }
+
+    if (reduceMotion) {
+      sec.classList.add("is-static");
+      render(0.75);
+      return;
+    }
+
+    // scroll → progress. Desktop (Lenis) gets a touch of easing on top;
+    // phones follow native scroll 1:1 so it never feels behind your finger.
+    let raw = 0, cur = null, raf = 0, visible = false;
+    // the timeline ends while 60vh of the section remains, which is where the
+    // next section (pulled up by margin-bottom: -60vh) starts rising in
+    const read = () => {
+      const r = sec.getBoundingClientRect();
+      const total = r.height - innerHeight * 1.6;
+      return total > 0 ? -r.top / total : 0;
+    };
+    let active = false;
+    function frame() {
+      raf = 0;
+      cur += (raw - cur) * (LITE ? 1 : 0.32);
+      if (Math.abs(raw - cur) < 0.0004) cur = raw;
+      render(cur);
+      const on = cur > 0.005 && cur < 0.97;
+      if (on !== active) { active = on; document.body.classList.toggle("mg-active", on); }
+      if (cur !== raw) raf = requestAnimationFrame(frame);
+    }
+    const update = () => {
+      if (!visible) return;
+      raw = read();
+      if (cur === null) cur = raw; // first frame: jump straight to position
+      if (!raf) raf = requestAnimationFrame(frame);
+    };
+    new IntersectionObserver(([en]) => { visible = en.isIntersecting; update(); }, { rootMargin: "60% 0px" }).observe(sec);
+    addEventListener("scroll", update, { passive: true });
+    addEventListener("resize", () => { geo = null; update(); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { geo = null; update(); });
+  }
+
+  /* ------------------------------------------------------------------------
      Marquee
      ------------------------------------------------------------------------ */
   function renderMarquee() {
@@ -1164,6 +1400,7 @@
   hydrateIcons();
   renderMarquee();
   initOrbit();
+  initTitleSequence();
   renderFeatured();
   renderSkills();
   initRepos();

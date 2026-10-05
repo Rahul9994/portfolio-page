@@ -1557,6 +1557,152 @@ body.is-ready .scroll-cue { opacity: 1; }
 }
 
 /* ==========================================================================
+   TITLE SEQUENCE — scroll-scrubbed motion graphic (driven by initTitleSequence)
+   The stage is always "dark room" so it reads the same in both themes.
+   ========================================================================== */
+.mg {
+  position: relative;
+  height: 340vh;
+  margin-bottom: -60vh; /* the next section rises in over the sequence's final beat */
+  --mg-c1: #22d3ee; --mg-c2: #8b5cf6; --mg-c3: #f472b6; --mg-c4: #fbbf24;
+  --mg-ink: #03040b;
+}
+.mg-stage {
+  position: sticky; top: 0;
+  height: 100vh; height: 100svh;
+  overflow: hidden;
+  display: grid; place-items: center;
+  color: #fff;
+  contain: layout paint;
+}
+.mg-dim {
+  position: absolute; inset: 0; opacity: 0;
+  background: radial-gradient(120% 85% at 50% 42%, #0d0f2b 0%, var(--mg-ink) 68%);
+}
+.mg-floor {
+  position: absolute; left: -60%; right: -60%; bottom: 0; height: 48%;
+  perspective: 520px; perspective-origin: 50% 0%;
+  opacity: 0; pointer-events: none;
+  -webkit-mask-image: linear-gradient(transparent 0%, #000 55%, #000 78%, transparent 100%);
+  mask-image: linear-gradient(transparent 0%, #000 55%, #000 78%, transparent 100%);
+}
+.mg-floor span {
+  position: absolute; left: 0; right: 0; top: -120%; bottom: 0;
+  background-image:
+    linear-gradient(rgba(139, 92, 246, 0.55) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.4) 1px, transparent 1px);
+  background-size: 64px 64px;
+  transform-origin: 50% 100%;
+  transform: rotateX(74deg);
+}
+.mg-glow {
+  position: absolute; left: 50%; top: 46%; width: min(1100px, 120vw); aspect-ratio: 2.2;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, rgba(139, 92, 246, 0.42), rgba(34, 211, 238, 0.14) 55%, transparent);
+  opacity: 0; pointer-events: none;
+}
+.mg-particles { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+
+.mg-bar {
+  position: absolute; left: 6%; right: 6%; top: 50%; height: 1.5px; margin-top: -0.75px;
+  background: linear-gradient(90deg, transparent, #e0f7ff 18%, #fff 50%, #e0f7ff 82%, transparent);
+  box-shadow: 0 0 14px rgba(165, 243, 252, 0.9), 0 0 38px rgba(139, 92, 246, 0.75);
+  transform: scaleX(0); opacity: 0; z-index: 1;
+}
+
+.mg-hud {
+  position: absolute; inset: clamp(14px, 3.4vw, 40px);
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em;
+  color: #8c95c4; opacity: 0; pointer-events: none; z-index: 2;
+}
+.mg-hud b { color: #fff; font-weight: 500; }
+.mg-corner { position: absolute; width: 22px; height: 22px; border: 1.5px solid rgba(255, 255, 255, 0.4); }
+.mg-corner.tl { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+.mg-corner.tr { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+.mg-corner.bl { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+.mg-corner.br { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+.mg-label { position: absolute; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.mg-label.tl { top: 4px; left: 34px; }
+.mg-label.tr { top: 4px; right: 34px; }
+.mg-label.bl { bottom: 4px; left: 34px; color: #fff; }
+.mg-label.br { bottom: 4px; right: 34px; }
+.mg-rec { width: 7px; height: 7px; border-radius: 50%; background: #f43f5e; box-shadow: 0 0 10px #f43f5e; }
+.mg-progress { position: absolute; left: 34px; right: 34px; bottom: 30px; height: 1px; background: rgba(255, 255, 255, 0.12); }
+.mg-progress span { position: absolute; inset: 0; background: linear-gradient(90deg, var(--mg-c1), var(--mg-c2), var(--mg-c3)); transform-origin: left; transform: scaleX(0); }
+
+.mg-center {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column; align-items: center;
+  gap: clamp(18px, 3vw, 36px);
+}
+.mg-name {
+  position: relative;
+  font-family: var(--font-display); font-weight: 700;
+  font-size: clamp(52px, 14.5vw, 236px);
+  line-height: 0.9; letter-spacing: -0.045em;
+  font-kerning: none; /* keeps the per-letter spans and the overlay layers pixel-aligned */
+  text-align: center;
+}
+.mg-line { position: relative; white-space: nowrap; padding: 0.05em 0.08em; }
+.mg-l1 { overflow: hidden; perspective: 700px; }
+.mg-ch { display: inline-block; transform-origin: 50% 85%; opacity: 0; }
+.mg-l1 .mg-ch { color: #fff; }
+.mg-l2 .mg-ch { color: transparent; -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.9); }
+.mg-layer { position: absolute; inset: 0; padding: inherit; pointer-events: none; }
+.mg-fill {
+  background: linear-gradient(100deg, var(--mg-c1), var(--mg-c2) 38%, var(--mg-c3) 70%, var(--mg-c4));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  clip-path: inset(-20% 100% -20% 0);
+}
+.mg-sheen {
+  background: linear-gradient(105deg, transparent 44%, rgba(255, 255, 255, 0.95) 50%, transparent 56%);
+  background-size: 300% 100%; background-position: 100% 0;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  opacity: 0;
+}
+.mg-tags {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 26px;
+  max-width: 92vw;
+  font-family: var(--font-mono); font-size: clamp(10.5px, 1.15vw, 14px);
+  letter-spacing: 0.26em; color: #b9c0e6;
+}
+.mg-tags span { opacity: 0; white-space: nowrap; display: inline-flex; align-items: center; }
+.mg-tags span::before {
+  content: ""; width: 5px; height: 5px; margin-right: 12px;
+  background: var(--mg-c2); box-shadow: 0 0 8px var(--mg-c2); transform: rotate(45deg);
+}
+.mg-hint {
+  position: absolute; left: 50%; bottom: 11%; transform: translateX(-50%); z-index: 2;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.32em; color: #b9c0e6;
+  opacity: 0;
+}
+.mg-hint i { width: 1px; height: 40px; background: linear-gradient(#fff, transparent); transform-origin: top; animation: mgHint 1.6s var(--ease) infinite; }
+@keyframes mgHint { 0% { transform: scaleY(0); } 60% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+
+/* reduced motion: a still, composed title card instead of a pinned sequence */
+.mg.is-static { height: auto; margin-bottom: 0; }
+/* keep the frame clean while the sequence is pinned */
+.social-rail, .email-rail { transition: opacity 0.5s var(--ease), transform 1s 0.6s var(--ease); }
+body.mg-active .social-rail, body.mg-active .email-rail { opacity: 0 !important; pointer-events: none; }
+.mg.is-static .mg-stage { position: relative; height: 80vh; }
+.mg.is-static .mg-hint { display: none; }
+
+@media (max-width: 720px) {
+  .mg { height: 290vh; }
+  .mg-hud { font-size: 9px; letter-spacing: 0.12em; }
+  .mg-label.tl, .mg-label.bl { left: 28px; }
+  .mg-label.tr, .mg-label.br { right: 28px; }
+  .mg-progress { left: 28px; right: 28px; bottom: 26px; }
+  .mg-corner { width: 16px; height: 16px; }
+  .mg-l2 .mg-ch { -webkit-text-stroke-width: 1px; }
+  .mg-tags { gap: 8px 16px; letter-spacing: 0.2em; }
+}
+@media (max-width: 400px) {
+  .mg-label.tr { display: none; }
+}
+
+/* ==========================================================================
    LITE RENDERING (phones & low-power devices — set in <head>)
    Same look, but nothing repaints the whole screen every frame.
    ========================================================================== */
