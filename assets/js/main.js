@@ -45,6 +45,7 @@
     robot: '<rect x="4.5" y="8" width="15" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16.5h5M2 12v3M22 12v3"/><circle cx="12" cy="3" r="1"/>',
     external: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
     star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z"/>',
+    lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   };
   function icon(name, cls = "") {
     if (FILLED[name]) return `<svg viewBox="0 0 24 24" class="${cls}" fill="currentColor" aria-hidden="true">${FILLED[name]}</svg>`;
@@ -972,7 +973,9 @@
           <div class="feat-tags">${p.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>
           <div class="feat-links">
             ${p.live ? `<a class="btn btn-glow btn-sm magnetic" href="${p.live}" target="_blank" rel="noopener"><span>Live demo</span>${icon("external", "ic")}</a>` : ""}
-            <a class="btn btn-ghost btn-sm magnetic" href="${gh(p.repo)}" target="_blank" rel="noopener">${icon("github", "ic")}<span>Source code</span></a>
+            ${p.private
+              ? `<span class="btn btn-ghost btn-sm btn-private" title="The source code is in a private repository">${icon("lock", "ic")}<span>Private repo</span></span>`
+              : `<a class="btn btn-ghost btn-sm magnetic" href="${gh(p.repo)}" target="_blank" rel="noopener">${icon("github", "ic")}<span>Source code</span></a>`}
           </div>
         </div>
       </article>`).join("");
@@ -984,7 +987,7 @@
   const LANG_COLORS = {
     Python: "#3572A5", JavaScript: "#f1e05a", TypeScript: "#3178c6", HTML: "#e34c26", CSS: "#563d7c",
     Jupyter: "#DA5B0B", "Jupyter Notebook": "#DA5B0B", "C++": "#f34b7d", C: "#555555", Java: "#b07219",
-    Batchfile: "#C1F12E", Shell: "#89e051",
+    Batchfile: "#C1F12E", Shell: "#89e051", Kotlin: "#A97BFF",
   };
   const CAT_STYLE = {
     ai: { h: [262, 190], icon: "brain" },
@@ -1031,6 +1034,7 @@
           <div class="repo-badges">
             ${r.live ? '<span class="pill live">Live</span>' : ""}
             ${r.fork ? '<span class="pill fork">Fork</span>' : ""}
+            ${r.private ? `<span class="pill private">${icon("lock")}Private</span>` : ""}
             ${r.stars ? `<span class="pill">★ ${r.stars}</span>` : ""}
           </div>
         </div>
@@ -1043,7 +1047,9 @@
             <span class="lang"><i style="--lc:${LANG_COLORS[lang] || "#8b949e"}"></i>${esc(lang)} · ${fmtDate(r.updated)}</span>
             <span class="repo-links">
               ${r.live ? `<a href="${r.live}" target="_blank" rel="noopener" aria-label="Open live ${esc(r.title)}">${icon("external")}Live</a>` : ""}
-              <a href="https://github.com/${D.github}/${r.name}" target="_blank" rel="noopener" aria-label="View ${esc(r.title)} on GitHub">${icon("github")}Code</a>
+              ${r.private
+                ? `<span class="private" title="The source code is in a private repository" aria-label="Private repository">${icon("lock")}${r.live ? "" : "Private"}</span>`
+                : `<a href="https://github.com/${D.github}/${r.name}" target="_blank" rel="noopener" aria-label="View ${esc(r.title)} on GitHub">${icon("github")}Code</a>`}
             </span>
           </div>
         </div>
@@ -1068,9 +1074,11 @@
     renderRepoFilters();
     applyRepoFilter(false);
     bindTilt($("#repoGrid"));
+    // both counters are labelled "public", so private projects shown as cards don't count
+    const publicCount = repos.filter((r) => !r.private).length;
     $$("#repoCount, #ghRepoCount").forEach((el) => {
-      if (el.id === "ghRepoCount" || document.body.classList.contains("is-ready")) el.textContent = repos.length;
-      el.dataset.count = repos.length;
+      if (el.id === "ghRepoCount" || document.body.classList.contains("is-ready")) el.textContent = publicCount;
+      el.dataset.count = publicCount;
     });
   }
 
